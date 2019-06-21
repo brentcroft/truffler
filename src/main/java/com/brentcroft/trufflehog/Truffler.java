@@ -40,28 +40,6 @@ public class Truffler
     private final List< Sniffer > sniffers = new ArrayList<> ();
     private final List< Receiver > receivers = new ArrayList<> ();
 
-    {
-        sniffers.add ( new EntropySniffer () );
-
-        receivers.add ( ( new LoggingReceiver () ) );
-    }
-
-
-    private Repository openRepo ()
-    {
-        try
-        {
-            return new FileRepositoryBuilder ()
-                    .setGitDir ( new File ( repositoryDirectory ) )
-                    .readEnvironment () // scan environment GIT_* variables
-                    .findGitDir () // scan up the file system tree
-                    .build ();
-        } catch ( IOException e )
-        {
-            throw new TrufflerException ( e );
-        }
-    }
-
 
     public void truffle ()
     {
@@ -73,6 +51,9 @@ public class Truffler
                 ObjectId headId = repo.resolve ( Constants.HEAD );
                 String headName = headId.name ();
 
+                //
+                receivers.forEach ( r -> r.open () );
+
                 Ref branch = git
                         .branchList ()
                         .setListMode ( ListBranchCommand.ListMode.ALL )
@@ -82,6 +63,9 @@ public class Truffler
                         .findAny ()
                         .orElseThrow ( () -> new RuntimeException ( "No branch named: " + headId ) );
 
+
+
+
                 try ( RevWalk walk = new RevWalk ( repo ) )
                 {
                     Set< String > alreadySeen = new HashSet<> ();
@@ -90,9 +74,12 @@ public class Truffler
                             repo,
                             walk,
                             walk.parseCommit ( branch.getObjectId () ),
-                    "",
                             maxDepth,
                             alreadySeen );
+                }
+                finally
+                {
+                    receivers.forEach ( r -> r.close () );
                 }
             }
         } catch ( Exception e )
@@ -102,7 +89,7 @@ public class Truffler
     }
 
 
-    private void processCommits ( Repository repo, RevWalk walk, RevCommit commit, String parentId, int depth, Set< String > alreadySeen ) throws IOException
+    private void processCommits ( Repository repo, RevWalk walk, RevCommit commit, int depth, Set< String > alreadySeen ) throws IOException
     {
 
         if ( depth < 0 || alreadySeen.contains ( commit.getId ().name () ) )
@@ -120,7 +107,7 @@ public class Truffler
         }
         else
         {
-            CommitIssues commitIssues = new CommitIssues ( commit );
+
 
             for ( RevCommit parentCommit : parents )
             {
@@ -130,6 +117,8 @@ public class Truffler
                 df.setRepository ( repo );
 
                 List< DiffEntry > entries = df.scan ( commit, parentCommit );
+
+                CommitIssues commitIssues = new CommitIssues ( commit );
 
                 for ( DiffEntry entry : entries )
                 {
@@ -150,7 +139,6 @@ public class Truffler
                         repo,
                         walk,
                         parentCommit,
-                        commit.getId ().getName (),
                         depth - 1,
                         alreadySeen );
             }
@@ -168,12 +156,31 @@ public class Truffler
                 .collect ( Collectors.toList () );
     }
 
+
+    private Repository openRepo ()
+    {
+        try
+        {
+            return new FileRepositoryBuilder ()
+                    .setGitDir ( new File ( repositoryDirectory ) )
+                    .readEnvironment () // scan environment GIT_* variables
+                    .findGitDir () // scan up the file system tree
+                    .build ();
+        } catch ( IOException e )
+        {
+            throw new TrufflerException ( e );
+        }
+    }
+
+
     @RequiredArgsConstructor
     @ToString
     @Getter
     static class Issue
     {
+        private final String tag;
         private final String text;
+        private final Map<String,Object> attributes = new HashMap<> (  );
     }
 
 
@@ -201,7 +208,7 @@ public class Truffler
     @RequiredArgsConstructor
     @ToString
     @Getter
-    static class CommitIssues
+    public static class CommitIssues
     {
         private final RevCommit commit;
         private final List< DiffIssues > diffIssues = new ArrayList<> ();
@@ -229,12 +236,18 @@ public class Truffler
     }
 
 
-    interface Receiver
+    public interface Receiver
     {
         void receive ( CommitIssues commitIssues );
+
+        default void open() {};
+
+        default void close() {};
+
+        default String serialize() { return ""; }
     }
 
-    interface Sniffer
+    public interface Sniffer
     {
         List< Issue > sniff ( Repository repo, DiffEntry diffEntry );
     }

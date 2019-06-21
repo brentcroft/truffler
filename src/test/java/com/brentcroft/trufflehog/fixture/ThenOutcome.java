@@ -6,11 +6,7 @@ import com.tngtech.jgiven.annotation.ExpectedScenarioState;
 import lombok.Getter;
 import lombok.extern.java.Log;
 
-import java.util.List;
-
-import static java.lang.String.format;
 import static org.fest.assertions.api.Assertions.assertThat;
-import static org.junit.Assert.assertNotNull;
 
 @Getter
 @Log
@@ -21,20 +17,13 @@ public class ThenOutcome extends Stage< ThenOutcome >
     Truffler truffler;
 
     @ExpectedScenarioState
-    List< String > localBranches;
+    String reportSerialization;
 
-
-    public void repository_is_open ()
+    public void report_is_created ()
     {
-        assertNotNull ( truffler );
+        assertThat(truffler).isNotNull ();
+
+        assertThat ( reportSerialization ).isNotNull ().isNotEmpty ();
     }
 
-    public void there_are_local_branches ()
-    {
-        assertThat ( localBranches )
-                .isNotNull ()
-                .isNotEmpty ();
-
-        log.info ( format ( "Local branches: %s", localBranches ) );
-    }
 }

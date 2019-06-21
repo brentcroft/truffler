@@ -8,21 +8,27 @@ import org.junit.Test;
 
 public class TrufflerTest extends ScenarioTest< GivenState, WhenAction, ThenOutcome >
 {
+    String lucidGit = "D:/object-detection/lucid/.git";
 
-    String tf = "D:/object-detection/tensorflow/.git";
+    String localProject = "./.git";
 
     @Test
-    public void walks_commits () throws Exception
+    public void truffles ()
     {
         given ()
-                .walker_of_depth( 6 )
-                .repository_directory ( "./.git" );
+                .a_truffler ()
+                .max_depth ( 6 )
+                .git_directory ( lucidGit )
+                .entropy_sniffer()
+                .entropy_base64_threshold ( 4.1 )
+                .entropy_hex_threshold ( 2 )
+                .writes_xml_report_to ("truffler-report.xml");
 
         when ()
-                .truffle_repository ();
+                .truffle ();
 
         then ()
-                .repository_is_open ();
+                .report_is_created ();
 
     }
 }

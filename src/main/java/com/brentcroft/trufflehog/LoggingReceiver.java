@@ -17,4 +17,6 @@ public class LoggingReceiver implements Truffler.Receiver
                 )
         );
     }
+
+
 }

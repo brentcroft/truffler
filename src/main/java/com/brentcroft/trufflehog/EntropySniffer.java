@@ -18,12 +18,12 @@ public class EntropySniffer implements Truffler.Sniffer
 {
 
     private static final String BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=@.";
-    private static final double BASE64_THRESHOLD = 4.5;
+    public static double BASE64_THRESHOLD = 4.5;
 
     private static final String HEX_CHARS = "1234567890abcdefABCDEF";
-    private static final double HEX_THRESHOLD = 2.9;
+    public static double HEX_THRESHOLD = 2.9;
 
-    private static final int MIN_LENGTH = 20;
+    public static int MIN_LENGTH = 20;
 
     private Set< String > knownStrings = new HashSet<> ();
 
@@ -64,11 +64,23 @@ public class EntropySniffer implements Truffler.Sniffer
 
                                 if ( entropy > charBase.getThreshold () )
                                 {
-                                    issues.add ( new Truffler.Issue ( text )
+                                    issues.add ( new Truffler.Issue ( "entropy", text )
                                     {
+                                        String TYPE = "type";
+                                        String SCORE = "score";
+                                        {
+                                            getAttributes ().put ( TYPE, charBase.getName () );
+                                            getAttributes ().put ( SCORE, entropy );
+                                        }
+
                                         public String toString ()
                                         {
-                                            return format ( "[%s=%.4f] %s, %s", charBase.getName (), entropy, text, getDiffEntryText () );
+                                            return format (
+                                                    "[%s=%.4f] %s, %s",
+                                                    charBase.getName (),
+                                                    entropy,
+                                                    text,
+                                                    getDiffEntryText () );
                                         }
 
                                         public String getDiffEntryText ()
