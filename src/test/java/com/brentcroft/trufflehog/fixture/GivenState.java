@@ -1,6 +1,7 @@
 package com.brentcroft.trufflehog.fixture;
 
 import com.brentcroft.trufflehog.EntropySniffer;
+import com.brentcroft.trufflehog.LoggingReceiver;
 import com.brentcroft.trufflehog.Truffler;
 import com.brentcroft.trufflehog.XmlReceiver;
 import com.tngtech.jgiven.Stage;
@@ -42,9 +43,17 @@ public class GivenState extends Stage< GivenState >
         return self ();
     }
 
+    public GivenState logs_report( )
+    {
+        truffler.getReceivers ().add ( new LoggingReceiver ());
+
+        return self ();
+    }
+
     public GivenState writes_xml_report_to ( String filename )
     {
         receiver =  new XmlReceiver ( filename );
+
         truffler.getReceivers ().add ( receiver );
 
         return self ();

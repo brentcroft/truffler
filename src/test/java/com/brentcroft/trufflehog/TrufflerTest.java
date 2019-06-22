@@ -22,6 +22,7 @@ public class TrufflerTest extends ScenarioTest< GivenState, WhenAction, ThenOutc
                 .entropy_sniffer()
                 .entropy_base64_threshold ( 4.1 )
                 .entropy_hex_threshold ( 2 )
+                .logs_report ()
                 .writes_xml_report_to ("truffler-report.xml");
 
         when ()

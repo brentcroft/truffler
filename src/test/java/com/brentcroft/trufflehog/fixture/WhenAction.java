@@ -24,8 +24,5 @@ public class WhenAction extends Stage< WhenAction >
         truffler.truffle();
 
         reportSerialization = receiver.serialize();
-
-        // TODO : remove
-        System.out.println ( reportSerialization );
     }
 }

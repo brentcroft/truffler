@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import org.eclipse.jgit.lib.PersonIdent;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -17,9 +16,10 @@ import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.StringWriter;
 import java.text.SimpleDateFormat;
-import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 import static java.lang.String.format;
@@ -106,6 +106,7 @@ public class XmlReceiver implements Truffler.Receiver
     @Override
     public void close ()
     {
+        //never closes
     }
 
     public String serialize()
@@ -119,9 +120,29 @@ public class XmlReceiver implements Truffler.Receiver
 
             //initialize StreamResult with File object to save to file
             StreamResult result = new StreamResult(new StringWriter ());
+
             DOMSource source = new DOMSource(document);
             transformer.transform(source, result);
-            return result.getWriter().toString();
+
+            String xmlText = result.getWriter().toString();
+
+            if ( !(filename == null || filename.isEmpty ()) )
+            {
+                try
+                {
+                    FileWriter fw = new FileWriter ( filename );
+
+                    fw.write ( xmlText );
+
+                    fw.close ();
+
+                } catch ( IOException e )
+                {
+                    throw new TrufflerException ( e );
+                }
+            }
+
+            return xmlText;
         }
         catch ( TransformerException e )
         {

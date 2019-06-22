@@ -66,7 +66,7 @@ public class EntropySniffer implements Truffler.Sniffer
                                 {
                                     issues.add ( new Truffler.Issue ( "entropy", text )
                                     {
-                                        String TYPE = "type";
+                                        String TYPE = "op";
                                         String SCORE = "score";
                                         {
                                             getAttributes ().put ( TYPE, charBase.getName () );
