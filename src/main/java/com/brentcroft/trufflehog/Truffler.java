@@ -1,9 +1,10 @@
 package com.brentcroft.trufflehog;
 
+import com.brentcroft.trufflehog.model.*;
+import com.brentcroft.trufflehog.util.JUL;
+import com.brentcroft.trufflehog.util.TrufflerException;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 import lombok.extern.java.Log;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand;
@@ -51,8 +52,7 @@ public class Truffler
                 ObjectId headId = repo.resolve ( Constants.HEAD );
                 String headName = headId.name ();
 
-                //
-                receivers.forEach ( r -> r.open () );
+                receivers.forEach ( Receiver::open );
 
                 Ref branch = git
                         .branchList ()
@@ -62,9 +62,6 @@ public class Truffler
                         .filter ( ref -> headName.equals ( ref.getObjectId ().name () ) )
                         .findAny ()
                         .orElseThrow ( () -> new RuntimeException ( "No branch named: " + headId ) );
-
-
-
 
                 try ( RevWalk walk = new RevWalk ( repo ) )
                 {
@@ -79,7 +76,7 @@ public class Truffler
                 }
                 finally
                 {
-                    receivers.forEach ( r -> r.close () );
+                    receivers.forEach ( Receiver::close );
                 }
             }
         } catch ( Exception e )
@@ -173,82 +170,4 @@ public class Truffler
     }
 
 
-    @RequiredArgsConstructor
-    @ToString
-    @Getter
-    static class Issue
-    {
-        private final String tag;
-        private final String text;
-        private final Map<String,Object> attributes = new HashMap<> (  );
-    }
-
-
-    @RequiredArgsConstructor
-    @Getter
-    static class DiffIssues
-    {
-        private final DiffEntry diffEntry;
-        private final List< Issue > issues;
-
-        public String toString ()
-        {
-            return format (
-                    "path=[%s] parent=[%s]%n    %s",
-                    diffEntry.getOldPath (),
-                    diffEntry.getOldId ().name (),
-                    issues
-                            .stream ()
-                            .map ( Object::toString )
-                            .collect ( Collectors.joining ( "\n    " ) )
-            );
-        }
-    }
-
-    @RequiredArgsConstructor
-    @ToString
-    @Getter
-    public static class CommitIssues
-    {
-        private final RevCommit commit;
-        private final List< DiffIssues > diffIssues = new ArrayList<> ();
-
-
-        public boolean hasIssues ()
-        {
-            return diffIssues.isEmpty ();
-        }
-
-        public String toString ()
-        {
-            PersonIdent person = commit.getAuthorIdent ();
-            return format (
-                    "commit%n  sha=[%s]%n  date=[ %s ]%n  author=[%s]%n  %s",
-                    commit.getId ().getName (),
-                    person.getWhen (),
-                    person.getName (),
-                    diffIssues
-                            .stream ()
-                            .map ( Object::toString )
-                            .collect ( Collectors.joining ( "\n  " ) )
-            );
-        }
-    }
-
-
-    public interface Receiver
-    {
-        void receive ( CommitIssues commitIssues );
-
-        default void open() {};
-
-        default void close() {};
-
-        default String serialize() { return ""; }
-    }
-
-    public interface Sniffer
-    {
-        List< Issue > sniff ( Repository repo, DiffEntry diffEntry );
-    }
 }

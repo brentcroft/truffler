@@ -17,12 +17,13 @@ public class TrufflerTest extends ScenarioTest< GivenState, WhenAction, ThenOutc
     {
         given ()
                 .a_truffler ()
-                .max_depth ( 6 )
+                .max_depth ( 10 )
                 .git_directory ( lucidGit )
                 .entropy_sniffer()
                 .entropy_base64_threshold ( 4.1 )
-                .entropy_hex_threshold ( 2 )
-                .logs_report ()
+                .entropy_hex_threshold ( 3 )
+                .regex_sniffer( "regex.json")
+                //.logs_report ()
                 .writes_xml_report_to ("truffler-report.xml");
 
         when ()

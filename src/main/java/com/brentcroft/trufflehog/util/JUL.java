@@ -1,4 +1,4 @@
-package com.brentcroft.trufflehog;
+package com.brentcroft.trufflehog.util;
 
 import java.util.Date;
 import java.util.logging.*;

@@ -1,5 +1,8 @@
-package com.brentcroft.trufflehog;
+package com.brentcroft.trufflehog.sniffer;
 
+import com.brentcroft.trufflehog.model.Issue;
+import com.brentcroft.trufflehog.model.Sniffer;
+import com.brentcroft.trufflehog.util.TrufflerException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.jgit.diff.DiffEntry;
@@ -14,7 +17,7 @@ import java.util.stream.IntStream;
 
 import static java.lang.String.format;
 
-public class EntropySniffer implements Truffler.Sniffer
+public class EntropySniffer implements Sniffer
 {
 
     private static final String BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=@.";
@@ -29,14 +32,14 @@ public class EntropySniffer implements Truffler.Sniffer
 
 
     @Override
-    public List< Truffler.Issue > sniff ( Repository repo, DiffEntry diffEntry )
+    public List< Issue > sniff ( Repository repo, DiffEntry diffEntry )
     {
 
         return investigateEntry ( repo, diffEntry );
     }
 
 
-    private List< Truffler.Issue > investigateEntry ( Repository repo, DiffEntry diffEntry )
+    private List< Issue > investigateEntry ( Repository repo, DiffEntry diffEntry )
     {
 
         String diffEntryText = getDiffEntryText ( repo, diffEntry );
@@ -46,7 +49,7 @@ public class EntropySniffer implements Truffler.Sniffer
             return Collections.emptyList ();
         }
 
-        List< Truffler.Issue > issues = new ArrayList<> ();
+        List< Issue > issues = new ArrayList<> ();
 
         for ( String line : diffEntryText.split ( "\n" ) )
         {
@@ -64,7 +67,7 @@ public class EntropySniffer implements Truffler.Sniffer
 
                                 if ( entropy > charBase.getThreshold () )
                                 {
-                                    issues.add ( new Truffler.Issue ( "entropy", text )
+                                    issues.add ( new Issue ( "entropy", text )
                                     {
                                         String TYPE = "op";
                                         String SCORE = "score";
@@ -96,25 +99,6 @@ public class EntropySniffer implements Truffler.Sniffer
         return issues;
     }
 
-    private String getDiffEntryText ( Repository repo, DiffEntry diffEntry )
-    {
-        try
-        {
-            OutputStream out = new ByteArrayOutputStream ();
-
-            DiffFormatter diffFormatter = new DiffFormatter ( out );
-
-            diffFormatter.setRepository ( repo );
-
-            diffFormatter.format ( diffFormatter.toFileHeader ( diffEntry ) );
-
-            return out.toString ();
-
-        } catch ( IOException e )
-        {
-            throw new TrufflerException ( e );
-        }
-    }
 
 
     // see: https://stackoverflow.com/questions/3719631/log-to-the-base-2-in-python

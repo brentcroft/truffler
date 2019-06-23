@@ -1,6 +1,7 @@
 package com.brentcroft.trufflehog.fixture;
 
 import com.brentcroft.trufflehog.Truffler;
+import com.brentcroft.trufflehog.model.Receiver;
 import com.tngtech.jgiven.Stage;
 import com.tngtech.jgiven.annotation.ExpectedScenarioState;
 import com.tngtech.jgiven.annotation.ProvidedScenarioState;
@@ -14,7 +15,7 @@ public class WhenAction extends Stage< WhenAction >
     Truffler truffler;
 
     @ExpectedScenarioState
-    Truffler.Receiver receiver;
+    Receiver receiver;
 
     @ProvidedScenarioState
     String reportSerialization;

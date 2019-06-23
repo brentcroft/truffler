@@ -1,6 +1,9 @@
-package com.brentcroft.trufflehog;
+package com.brentcroft.trufflehog.receiver;
 
 
+import com.brentcroft.trufflehog.model.CommitIssues;
+import com.brentcroft.trufflehog.model.Receiver;
+import com.brentcroft.trufflehog.util.TrufflerException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
@@ -28,7 +31,7 @@ import static java.lang.String.format;
 @RequiredArgsConstructor
 @ToString
 @Getter
-public class XmlReceiver implements Truffler.Receiver
+public class XmlReceiver implements Receiver
 {
     public static final SimpleDateFormat SDF = new SimpleDateFormat ( "yyyy-MM-dd HH:mm:ss" );
 
@@ -59,7 +62,7 @@ public class XmlReceiver implements Truffler.Receiver
 
 
     @Override
-    public void receive ( Truffler.CommitIssues commitIssues )
+    public void receive ( CommitIssues commitIssues )
     {
         Element ciElement = document.createElement ( "commit" );
 

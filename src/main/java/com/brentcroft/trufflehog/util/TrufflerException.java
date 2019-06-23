@@ -1,4 +1,4 @@
-package com.brentcroft.trufflehog;
+package com.brentcroft.trufflehog.util;
 
 public class TrufflerException extends RuntimeException
 {

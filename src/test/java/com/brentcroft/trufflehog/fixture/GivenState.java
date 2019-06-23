@@ -1,9 +1,12 @@
 package com.brentcroft.trufflehog.fixture;
 
-import com.brentcroft.trufflehog.EntropySniffer;
-import com.brentcroft.trufflehog.LoggingReceiver;
+import com.brentcroft.trufflehog.model.Receiver;
+import com.brentcroft.trufflehog.model.Sniffer;
+import com.brentcroft.trufflehog.sniffer.EntropySniffer;
+import com.brentcroft.trufflehog.receiver.LoggingReceiver;
 import com.brentcroft.trufflehog.Truffler;
-import com.brentcroft.trufflehog.XmlReceiver;
+import com.brentcroft.trufflehog.receiver.XmlReceiver;
+import com.brentcroft.trufflehog.sniffer.RegexSniffer;
 import com.tngtech.jgiven.Stage;
 import com.tngtech.jgiven.annotation.ProvidedScenarioState;
 
@@ -16,10 +19,14 @@ public class GivenState extends Stage< GivenState >
     Truffler truffler;
 
     @ProvidedScenarioState
-    Truffler.Receiver receiver;
+    Receiver receiver;
 
     @ProvidedScenarioState
-    Truffler.Sniffer entropySniffer;
+    EntropySniffer entropySniffer;
+
+    @ProvidedScenarioState
+    RegexSniffer regexSniffer;
+
 
     public GivenState a_truffler( )
     {
@@ -81,5 +88,15 @@ public class GivenState extends Stage< GivenState >
         EntropySniffer.HEX_THRESHOLD = hexT;
 
         return self ();
+    }
+
+    public GivenState regex_sniffer ( String jsonRegexPath )
+    {
+        regexSniffer = new RegexSniffer ()
+                .withJsonRegexFile ( jsonRegexPath );
+
+        truffler.getSniffers ().add ( regexSniffer );
+
+        return self();
     }
 }
