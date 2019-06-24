@@ -11,10 +11,10 @@ public class LoggingReceiver implements Receiver
 {
 
     @Override
-    public void receive ( CommitIssues commitIssues )
+    public void receive( CommitIssues commitIssues )
     {
-        log.info (
-                format (
+        log.info(
+                format(
                         "%s", commitIssues
                 )
         );

@@ -15,10 +15,12 @@ import org.w3c.dom.Text;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.*;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -33,81 +35,99 @@ import static java.lang.String.format;
 @Getter
 public class XmlReceiver implements Receiver
 {
-    public static final SimpleDateFormat SDF = new SimpleDateFormat ( "yyyy-MM-dd HH:mm:ss" );
+    public static final SimpleDateFormat SDF = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss" );
 
     private final String filename;
     private Document document;
     private Element element;
 
     @Override
-    public void open ( )
+    public void open()
     {
         try
         {
             document = DocumentBuilderFactory
-                    .newInstance ()
-                    .newDocumentBuilder ()
-                    .newDocument ();
+                    .newInstance()
+                    .newDocumentBuilder()
+                    .newDocument();
 
-            element = document.createElement ( "truffle" );
-            element.setAttribute ( "created", SDF.format ( new Date () ) );
+            element = document.createElement( "truffle" );
+            element.setAttribute( "created", SDF.format( new Date() ) );
 
-            document.appendChild ( element );
+            document.appendChild( element );
 
-        } catch ( ParserConfigurationException e )
+        } catch( ParserConfigurationException e )
         {
-            throw new TrufflerException ( e );
+            throw new TrufflerException( e );
         }
     }
 
 
     @Override
-    public void receive ( CommitIssues commitIssues )
+    public void receive( CommitIssues commitIssues )
     {
-        Element ciElement = document.createElement ( "commit" );
+        Element ciElement = document.createElement( "commit" );
 
-        RevCommit commit = commitIssues.getCommit ();
+        RevCommit commit = commitIssues.getCommit();
 
-        ciElement.setAttribute ( "sha", commit.getName () );
+        ciElement.setAttribute( "sha", commit.getName() );
 
-        PersonIdent ident = commit.getCommitterIdent ();
-        ciElement.setAttribute ( "date", SDF.format ( ident.getWhen () ) );
-        ciElement.setAttribute ( "from", format( "%s", ident.getName () ) );
+        PersonIdent ident = commit.getCommitterIdent();
+        ciElement.setAttribute( "date", SDF.format( ident.getWhen() ) );
+        ciElement.setAttribute( "from", format( "%s", ident.getName() ) );
 
 
         commitIssues
-                .getDiffIssues ()
-                .forEach ( di -> {
-                    Element diElement = document.createElement ( "diff" );
+                .getDiffIssues()
+                .forEach( di -> {
+                    Element diElement = document.createElement( "diff" );
 
-                    diElement.setAttribute ( "path", di.getDiffEntry ().getOldPath () );
-                    ciElement.appendChild ( diElement );
+
+                    String newPath = di.getDiffEntry().getNewPath();
+                    String oldPath = di.getDiffEntry().getOldPath();
+
+                    if( newPath.equals( oldPath ) )
+                    {
+                        diElement.setAttribute( "path", newPath );
+                    }
+                    else
+                    {
+                        diElement.setAttribute( "path", newPath );
+                        diElement.setAttribute( "old-path", oldPath );
+                    }
+                    ciElement.appendChild( diElement );
 
                     di
-                            .getIssues ()
-                            .forEach ( i -> {
+                            .getIssues()
+                            .forEach( issue -> {
 
-                                Element iElement = document.createElement ( i.getTag () );
-                                Text iText = document.createTextNode ( i.getText () );
+                                Element iElement = document.createElement( issue.getTag() );
+                                Text iText = document.createTextNode( issue.getText() );
 
-                                iElement.appendChild ( iText );
-                                diElement.appendChild ( iElement );
+                                iElement.appendChild( iText );
+                                diElement.appendChild( iElement );
 
-                                i
-                                        .getAttributes ()
-                                        .forEach ( ( k, v ) -> {
-                                            iElement.setAttribute ( k, format("%s",v) );
+                                issue
+                                        .getAttributes()
+                                        .forEach( ( k, v ) -> {
+                                            if( v instanceof Double )
+                                            {
+                                                iElement.setAttribute( k, format( "%.4f", v ) );
+                                            }
+                                            else
+                                            {
+                                                iElement.setAttribute( k, format( "%s", v ) );
+                                            }
                                         } );
-
                             } );
 
                 } );
 
-        element.appendChild ( ciElement );
+        element.appendChild( ciElement );
     }
 
     @Override
-    public void close ()
+    public void close()
     {
         //never closes
     }
@@ -118,38 +138,37 @@ public class XmlReceiver implements Receiver
         {
             Transformer transformer = TransformerFactory.newInstance().newTransformer();
 
-            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-            transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+            transformer.setOutputProperty( OutputKeys.INDENT, "yes" );
+            transformer.setOutputProperty( "{http://xml.apache.org/xslt}indent-amount", "2" );
 
-            //initialize StreamResult with File object to save to file
-            StreamResult result = new StreamResult(new StringWriter ());
+            StreamResult result = new StreamResult( new StringWriter() );
 
-            DOMSource source = new DOMSource(document);
-            transformer.transform(source, result);
+            DOMSource source = new DOMSource( document );
+            transformer.transform( source, result );
 
             String xmlText = result.getWriter().toString();
 
-            if ( !(filename == null || filename.isEmpty ()) )
+            if( ! ( filename == null || filename.isEmpty() ) )
             {
                 try
                 {
-                    FileWriter fw = new FileWriter ( filename );
+                    FileWriter fw = new FileWriter( filename );
 
-                    fw.write ( xmlText );
+                    fw.write( xmlText );
 
-                    fw.close ();
+                    fw.close();
 
-                } catch ( IOException e )
+                } catch( IOException e )
                 {
-                    throw new TrufflerException ( e );
+                    throw new TrufflerException( e );
                 }
             }
 
             return xmlText;
-        }
-        catch ( TransformerException e )
+
+        } catch( TransformerException e )
         {
-            throw new TrufflerException ( e );
+            throw new TrufflerException( e );
         }
     }
 }

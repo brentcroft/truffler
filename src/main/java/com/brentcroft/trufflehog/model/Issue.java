@@ -14,5 +14,5 @@ public class Issue
 {
     private final String tag;
     private final String text;
-    private final Map<String,Object> attributes = new HashMap<> (  );
+    private final Map< String, Object > attributes = new HashMap<>();
 }

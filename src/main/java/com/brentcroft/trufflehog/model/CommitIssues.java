@@ -18,26 +18,26 @@ import static java.lang.String.format;
 public class CommitIssues
 {
     private final RevCommit commit;
-    private final List< DiffIssues > diffIssues = new ArrayList<> ();
+    private final List< DiffIssues > diffIssues = new ArrayList<>();
 
 
-    public boolean hasIssues ()
+    public boolean hasIssues()
     {
-        return diffIssues.isEmpty ();
+        return diffIssues.isEmpty();
     }
 
-    public String toString ()
+    public String toString()
     {
-        PersonIdent person = commit.getAuthorIdent ();
-        return format (
+        PersonIdent person = commit.getAuthorIdent();
+        return format(
                 "commit%n  sha=[%s]%n  date=[ %s ]%n  author=[%s]%n  %s",
-                commit.getId ().getName (),
-                person.getWhen (),
-                person.getName (),
+                commit.getId().getName(),
+                person.getWhen(),
+                person.getName(),
                 diffIssues
-                        .stream ()
-                        .map ( Object::toString )
-                        .collect ( Collectors.joining ( "\n  " ) )
+                        .stream()
+                        .map( Object::toString )
+                        .collect( Collectors.joining( "\n  " ) )
         );
     }
 }

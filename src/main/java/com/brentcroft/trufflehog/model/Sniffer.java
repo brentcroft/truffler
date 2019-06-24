@@ -12,26 +12,26 @@ import java.util.List;
 
 public interface Sniffer
 {
-    List< Issue > sniff ( Repository repo, DiffEntry diffEntry );
+    List< Issue > sniff( Repository repo, DiffEntry diffEntry );
 
 
-    default String getDiffEntryText ( Repository repo, DiffEntry diffEntry )
+    default String getDiffEntryText( Repository repo, DiffEntry diffEntry )
     {
         try
         {
-            OutputStream out = new ByteArrayOutputStream ();
+            OutputStream out = new ByteArrayOutputStream();
 
-            DiffFormatter diffFormatter = new DiffFormatter ( out );
+            DiffFormatter diffFormatter = new DiffFormatter( out );
 
-            diffFormatter.setRepository ( repo );
+            diffFormatter.setRepository( repo );
 
-            diffFormatter.format ( diffFormatter.toFileHeader ( diffEntry ) );
+            diffFormatter.format( diffFormatter.toFileHeader( diffEntry ) );
 
-            return out.toString ();
+            return out.toString();
 
-        } catch ( IOException e )
+        } catch( IOException e )
         {
-            throw new TrufflerException ( e );
+            throw new TrufflerException( e );
         }
     }
 }

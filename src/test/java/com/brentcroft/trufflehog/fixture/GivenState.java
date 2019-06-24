@@ -1,16 +1,13 @@
 package com.brentcroft.trufflehog.fixture;
 
-import com.brentcroft.trufflehog.model.Receiver;
-import com.brentcroft.trufflehog.model.Sniffer;
-import com.brentcroft.trufflehog.sniffer.EntropySniffer;
-import com.brentcroft.trufflehog.receiver.LoggingReceiver;
 import com.brentcroft.trufflehog.Truffler;
+import com.brentcroft.trufflehog.model.Receiver;
+import com.brentcroft.trufflehog.receiver.LoggingReceiver;
 import com.brentcroft.trufflehog.receiver.XmlReceiver;
+import com.brentcroft.trufflehog.sniffer.EntropySniffer;
 import com.brentcroft.trufflehog.sniffer.RegexSniffer;
 import com.tngtech.jgiven.Stage;
 import com.tngtech.jgiven.annotation.ProvidedScenarioState;
-
-
 
 
 public class GivenState extends Stage< GivenState >
@@ -28,74 +25,74 @@ public class GivenState extends Stage< GivenState >
     RegexSniffer regexSniffer;
 
 
-    public GivenState a_truffler( )
+    public GivenState a_truffler()
     {
-        truffler = new Truffler ();
+        truffler = new Truffler();
 
-        return self ();
+        return self();
     }
 
 
-    public GivenState git_directory ( String pathToGitDirectory )
+    public GivenState git_directory( String pathToGitDirectory )
     {
-        truffler.setRepositoryDirectory ( pathToGitDirectory );
+        truffler.setRepositoryDirectory( pathToGitDirectory );
 
-        return self ();
+        return self();
     }
 
-    public GivenState max_depth ( int depth )
+    public GivenState max_depth( int depth )
     {
-        truffler.setMaxDepth ( depth );
+        truffler.setMaxDepth( depth );
 
-        return self ();
+        return self();
     }
 
-    public GivenState logs_report( )
+    public GivenState logs_report()
     {
-        truffler.getReceivers ().add ( new LoggingReceiver ());
+        truffler.getReceivers().add( new LoggingReceiver() );
 
-        return self ();
+        return self();
     }
 
-    public GivenState writes_xml_report_to ( String filename )
+    public GivenState writes_xml_report_to( String filename )
     {
-        receiver =  new XmlReceiver ( filename );
+        receiver = new XmlReceiver( filename );
 
-        truffler.getReceivers ().add ( receiver );
+        truffler.getReceivers().add( receiver );
 
-        return self ();
+        return self();
     }
 
-    public GivenState entropy_sniffer ()
+    public GivenState entropy_sniffer()
     {
         entropySniffer = new EntropySniffer();
 
-        truffler.getSniffers ().add ( entropySniffer );
+        truffler.getSniffers().add( entropySniffer );
 
-        return self ();
+        return self();
     }
 
 
-    public GivenState entropy_base64_threshold ( double base64T)
+    public GivenState entropy_base64_threshold( double base64T )
     {
         EntropySniffer.BASE64_THRESHOLD = base64T;
 
-        return self ();
+        return self();
     }
 
-    public GivenState entropy_hex_threshold ( double hexT)
+    public GivenState entropy_hex_threshold( double hexT )
     {
         EntropySniffer.HEX_THRESHOLD = hexT;
 
-        return self ();
+        return self();
     }
 
-    public GivenState regex_sniffer ( String jsonRegexPath )
+    public GivenState regex_sniffer( String jsonRegexPath )
     {
-        regexSniffer = new RegexSniffer ()
-                .withJsonRegexFile ( jsonRegexPath );
+        regexSniffer = new RegexSniffer()
+                .withJsonRegexFile( jsonRegexPath );
 
-        truffler.getSniffers ().add ( regexSniffer );
+        truffler.getSniffers().add( regexSniffer );
 
         return self();
     }

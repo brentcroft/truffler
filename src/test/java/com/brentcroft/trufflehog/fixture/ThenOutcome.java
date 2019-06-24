@@ -19,11 +19,11 @@ public class ThenOutcome extends Stage< ThenOutcome >
     @ExpectedScenarioState
     String reportSerialization;
 
-    public void report_is_created ()
+    public void report_is_created()
     {
-        assertThat(truffler).isNotNull ();
+        assertThat( truffler ).isNotNull();
 
-        assertThat ( reportSerialization ).isNotNull ().isNotEmpty ();
+        assertThat( reportSerialization ).isNotNull().isNotEmpty();
     }
 
 }

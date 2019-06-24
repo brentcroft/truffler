@@ -20,7 +20,7 @@ public class WhenAction extends Stage< WhenAction >
     @ProvidedScenarioState
     String reportSerialization;
 
-    public void truffle ()
+    public void truffle()
     {
         truffler.truffle();
 

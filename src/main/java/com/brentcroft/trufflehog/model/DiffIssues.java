@@ -16,16 +16,16 @@ public class DiffIssues
     private final DiffEntry diffEntry;
     private final List< Issue > issues;
 
-    public String toString ()
+    public String toString()
     {
-        return format (
+        return format(
                 "path=[%s] parent=[%s]%n    %s",
-                diffEntry.getOldPath (),
-                diffEntry.getOldId ().name (),
+                diffEntry.getNewPath(),
+                diffEntry.getNewId().name(),
                 issues
-                        .stream ()
-                        .map ( Object::toString )
-                        .collect ( Collectors.joining ( "\n    " ) )
+                        .stream()
+                        .map( Object::toString )
+                        .collect( Collectors.joining( "\n    " ) )
         );
     }
 }
