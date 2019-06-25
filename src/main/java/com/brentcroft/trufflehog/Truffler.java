@@ -13,13 +13,13 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.treewalk.AbstractTreeIterator;
+import org.eclipse.jgit.treewalk.CanonicalTreeParser;
+import org.eclipse.jgit.treewalk.EmptyTreeIterator;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -40,6 +40,7 @@ public class Truffler
     public int maxDepth = Integer.MAX_VALUE;
 
     private String repositoryDirectory = "./.git";
+    private String earliestCommitId = null;
 
     private final List< Sniffer > sniffers = new ArrayList<>();
     private final List< Receiver > receivers = new ArrayList<>();
@@ -90,18 +91,20 @@ public class Truffler
 
     private void processCommits( Repository repo, RevWalk walk, RevCommit commit, int depth, Set< String > alreadySeen ) throws IOException
     {
-        if( depth < 0 || alreadySeen.contains( commit.getId().name() ) )
+        String commitId = commit.getId().name();
+
+        if( depth < 0 || alreadySeen.contains( commitId ) )
         {
             return;
         }
 
-        alreadySeen.add( commit.getId().name() );
+        alreadySeen.add( commitId );
 
         RevCommit[] parents = commit.getParents();
 
         if( Objects.isNull( parents ) || parents.length == 0 )
         {
-            diffIssues( repo, commit, null );
+            diffFirstCommit( repo, commit );
         }
         else
         {
@@ -111,8 +114,24 @@ public class Truffler
 
                 diffIssues( repo, commit, parentCommit );
 
-                processCommits( repo, walk, parentCommit, depth - 1, alreadySeen );
+                if( !commitId.equals( earliestCommitId ) )
+                {
+                    processCommits( repo, walk, parentCommit, depth - 1, alreadySeen );
+                }
             }
+        }
+    }
+
+    private void diffFirstCommit(Repository repo, RevCommit commit) throws IOException
+    {
+        AbstractTreeIterator oldTreeIter = new EmptyTreeIterator();
+        ObjectReader reader = repo.newObjectReader();
+        AbstractTreeIterator newTreeIter = new CanonicalTreeParser( null, reader, commit.getTree() );
+        try( DiffFormatter df = new DiffFormatter( new ByteArrayOutputStream() ) )
+        {
+            df.setRepository( repo );
+
+            processDiffEntries(repo, commit, df.scan( oldTreeIter, newTreeIter ));
         }
     }
 
@@ -122,22 +141,28 @@ public class Truffler
         {
             df.setRepository( repo );
 
-            List< DiffEntry > entries = df.scan( commit, parentCommit );
-
-            CommitIssues commitIssues = new CommitIssues( commit );
-
-            for( DiffEntry entry : entries )
-            {
-                commitIssues
-                        .getDiffIssues()
-                        .addAll( notifySniffers( repo, entry ) );
-            }
-            if( ! commitIssues.hasIssues() )
-            {
-                receivers.forEach( r -> r.receive( commitIssues ) );
-            }
+            processDiffEntries(repo, commit, df.scan( commit, parentCommit ));
         }
     }
+
+
+    private void processDiffEntries(Repository repo, RevCommit commit, List< DiffEntry > entries)
+    {
+        CommitIssues commitIssues = new CommitIssues( commit );
+
+        for( DiffEntry entry : entries )
+        {
+            commitIssues
+                    .getDiffIssues()
+                    .addAll( notifySniffers( repo, entry ) );
+        }
+        if( ! commitIssues.hasIssues() )
+        {
+            receivers.forEach( r -> r.receive( commitIssues ) );
+        }
+    }
+
+
 
     private List< DiffIssues > notifySniffers( Repository repo, DiffEntry diffEntry )
     {
@@ -151,7 +176,7 @@ public class Truffler
     }
 
 
-    private Repository openRepo()
+    public Repository openRepo()
     {
         try
         {

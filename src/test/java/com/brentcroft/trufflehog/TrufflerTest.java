@@ -17,6 +17,7 @@ public class TrufflerTest extends ScenarioTest< GivenState, WhenAction, ThenOutc
     {
         given()
                 .a_truffler()
+                //.earliest_commit("ed5f93ae58b102719a4fb0b685e9f0ea472475e9")
                 .max_depth( 10000 )
                 .git_directory( localProject )
                 .entropy_sniffer()
@@ -31,6 +32,20 @@ public class TrufflerTest extends ScenarioTest< GivenState, WhenAction, ThenOutc
 
         then()
                 .report_is_created();
+    }
 
+    @Test
+    public void handles_first_commit()
+    {
+        given()
+            .a_truffler()
+            .temp_git_directory( )
+            .first_commit()
+            .entropy_sniffer()
+            .logs_report ()
+            .writes_xml_report_to( "truffler-report.xml" );
+
+        when()
+                .truffle();
     }
 }
