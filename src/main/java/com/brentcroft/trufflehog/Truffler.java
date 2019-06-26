@@ -22,7 +22,6 @@ import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.EmptyTreeIterator;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.*;
@@ -113,7 +112,7 @@ public class Truffler
 
                 diffIssues( repo, commit, parentCommit );
 
-                if( !commitId.equals( earliestCommitId ) )
+                if( ! commitId.equals( earliestCommitId ) )
                 {
                     processCommits( repo, walk, parentCommit, depth - 1, alreadySeen );
                 }
@@ -121,7 +120,7 @@ public class Truffler
         }
     }
 
-    private void diffFirstCommit(Repository repo, RevCommit commit) throws IOException
+    private void diffFirstCommit( Repository repo, RevCommit commit ) throws IOException
     {
         AbstractTreeIterator oldTreeIter = new EmptyTreeIterator();
         ObjectReader reader = repo.newObjectReader();
@@ -131,7 +130,7 @@ public class Truffler
         {
             df.setRepository( repo );
 
-            processDiffEntries(repo, commit, df.scan( oldTreeIter, newTreeIter ));
+            processDiffEntries( repo, commit, df.scan( oldTreeIter, newTreeIter ) );
         }
     }
 
@@ -141,11 +140,11 @@ public class Truffler
         {
             df.setRepository( repo );
 
-            processDiffEntries(repo, commit, df.scan( commit, parentCommit ));
+            processDiffEntries( repo, commit, df.scan( commit, parentCommit ) );
         }
     }
 
-    private void processDiffEntries(Repository repo, RevCommit commit, List< DiffEntry > entries)
+    private void processDiffEntries( Repository repo, RevCommit commit, List< DiffEntry > entries )
     {
         CommitIssues commitIssues = new CommitIssues( commit );
 
@@ -155,7 +154,7 @@ public class Truffler
                     .getDiffIssues()
                     .addAll( notifySniffers( repo, entry ) );
         }
-        if( ! commitIssues.hasIssues() )
+        if( commitIssues.hasIssues() )
         {
             receivers.forEach( r -> r.receive( commitIssues ) );
         }

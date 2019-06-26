@@ -23,7 +23,7 @@ public class CommitIssues
 
     public boolean hasIssues()
     {
-        return diffIssues.isEmpty();
+        return ! diffIssues.isEmpty();
     }
 
     public String toString()
