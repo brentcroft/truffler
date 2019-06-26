@@ -83,7 +83,7 @@ public class GivenState extends Stage< GivenState >
     }
 
 
-    public GivenState temp_git_directory()
+    public GivenState a_temp_git_directory()
     {
         if( tempGitPath != null )
         {
@@ -150,7 +150,7 @@ public class GivenState extends Stage< GivenState >
         return self();
     }
 
-    public GivenState entropy_sniffer()
+    public GivenState an_entropy_sniffer()
     {
         entropySniffer = new EntropySniffer();
 
@@ -290,6 +290,13 @@ public class GivenState extends Stage< GivenState >
         {
             throw new RuntimeException( e );
         }
+
+        return self();
+    }
+
+    public GivenState ignored_strings( String... knownStrings )
+    {
+        entropySniffer.getKnownStrings().addAll( Arrays.asList( knownStrings ) );
 
         return self();
     }

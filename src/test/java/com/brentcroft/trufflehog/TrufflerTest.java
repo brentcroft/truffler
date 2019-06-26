@@ -3,9 +3,7 @@ package com.brentcroft.trufflehog;
 import com.brentcroft.trufflehog.fixture.GivenState;
 import com.brentcroft.trufflehog.fixture.ThenOutcome;
 import com.brentcroft.trufflehog.fixture.WhenAction;
-import com.tngtech.jgiven.annotation.Hidden;
 import com.tngtech.jgiven.junit.ScenarioTest;
-import org.junit.After;
 import org.junit.Test;
 
 public class TrufflerTest extends ScenarioTest< GivenState, WhenAction, ThenOutcome >
@@ -18,7 +16,7 @@ public class TrufflerTest extends ScenarioTest< GivenState, WhenAction, ThenOutc
                 .a_truffler()
                 .max_depth( 10000 )
                 .git_directory( "." )
-                .entropy_sniffer()
+                .an_entropy_sniffer()
                 .entropy_base64_threshold( 4 )
                 .entropy_hex_threshold( 1 )
                 .a_regex_sniffer( "regex.json" )

@@ -10,6 +10,7 @@ import org.eclipse.jgit.lib.Repository;
 import java.util.*;
 import java.util.stream.IntStream;
 
+@Getter
 public class EntropySniffer implements Sniffer
 {
 
@@ -17,7 +18,7 @@ public class EntropySniffer implements Sniffer
     public static double BASE64_THRESHOLD = 4.5;
 
     private static final String HEX_CHARS = "1234567890abcdefABCDEF";
-    public static double HEX_THRESHOLD = 2.9;
+    public static double HEX_THRESHOLD = 3;
 
     public static int MIN_LENGTH = 20;
 
