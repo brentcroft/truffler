@@ -92,11 +92,11 @@ public class XmlReceiver implements Receiver
                     }
                     else
                     {
-                        if (!"/dev/null".equals( newPath ))
+                        if( ! "/dev/null".equals( newPath ) )
                         {
                             diElement.setAttribute( "new-path", newPath );
                         }
-                        if (!"/dev/null".equals( oldPath ))
+                        if( ! "/dev/null".equals( oldPath ) )
                         {
                             diElement.setAttribute( "path", oldPath );
                         }

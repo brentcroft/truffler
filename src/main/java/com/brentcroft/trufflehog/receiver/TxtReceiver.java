@@ -8,13 +8,11 @@ import lombok.extern.java.Log;
 import java.util.ArrayList;
 import java.util.List;
 
-import static java.lang.String.format;
-
 @Log
 @Getter
 public class TxtReceiver implements Receiver
 {
-    private final List<String> received = new ArrayList<>(  );
+    private final List< String > received = new ArrayList<>();
 
     @Override
     public void receive( CommitIssues commitIssues )
