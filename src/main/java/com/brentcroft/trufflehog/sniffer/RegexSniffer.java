@@ -13,8 +13,6 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static java.lang.String.format;
-
 public class RegexSniffer implements Sniffer
 {
     private Map< String, Pattern > regex = new HashMap<>();
@@ -23,7 +21,7 @@ public class RegexSniffer implements Sniffer
     {
         try
         {
-            setRegex(
+            return withRegex(
                     new ObjectMapper()
                             .readValue( new File( path ), Map.class ) );
 
@@ -31,13 +29,13 @@ public class RegexSniffer implements Sniffer
         {
             throw new TrufflerException( e );
         }
-        return this;
     }
 
 
-    public void setRegex( Map< String, String > regexText )
+    public RegexSniffer withRegex( Map< String, String > regexText )
     {
         regexText.forEach( ( k, v ) -> regex.put( k, Pattern.compile( v ) ) );
+        return this;
     }
 
 
@@ -73,25 +71,10 @@ public class RegexSniffer implements Sniffer
 
             if( occurrences[ 0 ] > 0 )
             {
-                issues.add( new Issue( "regex", text[ 0 ] )
-                {
-                    String TYPE = "key";
-                    String COUNT = "count";
-
-                    {
-                        getAttributes().put( TYPE, k );
-                        getAttributes().put( COUNT, occurrences[ 0 ] );
-                    }
-
-                    public String toString()
-                    {
-                        return format(
-                                "[%s=%s] %s",
-                                TYPE,
-                                k,
-                                text );
-                    }
-                } );
+                issues.add(
+                        new Issue( "regex", text[ 0 ] )
+                                .withAttribute( "key", k )
+                                .withAttribute( "count", occurrences[ 0 ] ) );
             }
         } );
 

@@ -1,8 +1,8 @@
 package com.brentcroft.trufflehog.fixture;
 
 import com.brentcroft.trufflehog.Truffler;
-import com.brentcroft.trufflehog.model.Receiver;
 import com.brentcroft.trufflehog.receiver.LoggingReceiver;
+import com.brentcroft.trufflehog.receiver.TxtReceiver;
 import com.brentcroft.trufflehog.receiver.XmlReceiver;
 import com.brentcroft.trufflehog.sniffer.EntropySniffer;
 import com.brentcroft.trufflehog.sniffer.RegexSniffer;
@@ -10,20 +10,20 @@ import com.brentcroft.trufflehog.util.TrufflerException;
 import com.tngtech.jgiven.Stage;
 import com.tngtech.jgiven.annotation.ProvidedScenarioState;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
-import org.junit.After;
-
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.IntStream;
+
+import static java.lang.String.format;
 
 
 public class GivenState extends Stage< GivenState >
@@ -32,7 +32,11 @@ public class GivenState extends Stage< GivenState >
     Truffler truffler;
 
     @ProvidedScenarioState
-    Receiver receiver;
+    XmlReceiver xmlReceiver;
+
+    @ProvidedScenarioState
+    TxtReceiver txtReceiver;
+
 
     @ProvidedScenarioState
     EntropySniffer entropySniffer;
@@ -44,21 +48,25 @@ public class GivenState extends Stage< GivenState >
     @ProvidedScenarioState
     private String firstCommitId;
 
+    @ProvidedScenarioState
+    private List< String > commitIds = new ArrayList<>();
+
 
     private Path tempGitPath;
 
-    @After
     public void removeTemporaryFiles()
     {
-        if ( Objects.nonNull(tempGitPath))
+        if( Objects.nonNull( tempGitPath ) )
         {
             try
             {
                 Files
-                        .walk(tempGitPath)
-                        .sorted(Comparator.reverseOrder())
-                        .map(Path::toFile)
-                        .forEach(File::delete);
+                        .walk( tempGitPath )
+                        .sorted( Comparator.reverseOrder() )
+                        .map( Path::toFile )
+                        .forEach( File::delete );
+
+                System.out.println( "Cleaned up temporary directory" );
             } catch( IOException e )
             {
                 throw new TrufflerException( e );
@@ -75,18 +83,17 @@ public class GivenState extends Stage< GivenState >
     }
 
 
-    public GivenState temp_git_directory( )
+    public GivenState temp_git_directory()
     {
-        if ( tempGitPath != null)
+        if( tempGitPath != null )
         {
             throw new RuntimeException( "tempGitPath already exists" );
         }
         try
         {
-            Path tempDir = Files.createTempDirectory( "truffler" );
-            File gitDir = new File( tempDir.toFile(), ".git" );
+            tempGitPath = Files.createTempDirectory( "truffler" );
 
-            tempGitPath = gitDir.toPath();
+            File gitDir = new File( tempGitPath.toFile(), ".git" );
 
             Repository repo = FileRepositoryBuilder.create( gitDir );
 
@@ -97,11 +104,10 @@ public class GivenState extends Stage< GivenState >
             throw new RuntimeException( e );
         }
 
-        git_directory(tempGitPath.toFile().getAbsolutePath());
+        git_directory( tempGitPath.toFile().getAbsolutePath() );
 
         return self();
     }
-
 
 
     public GivenState git_directory( String pathToGitDirectory )
@@ -118,18 +124,28 @@ public class GivenState extends Stage< GivenState >
         return self();
     }
 
-    public GivenState logs_report()
+    public GivenState a_log_receiver()
     {
         truffler.getReceivers().add( new LoggingReceiver() );
 
         return self();
     }
 
+
+    public GivenState a_text_receiver()
+    {
+        txtReceiver = new TxtReceiver();
+
+        truffler.getReceivers().add( txtReceiver );
+
+        return self();
+    }
+
     public GivenState writes_xml_report_to( String filename )
     {
-        receiver = new XmlReceiver( filename );
+        xmlReceiver = new XmlReceiver( filename );
 
-        truffler.getReceivers().add( receiver );
+        truffler.getReceivers().add( xmlReceiver );
 
         return self();
     }
@@ -158,56 +174,119 @@ public class GivenState extends Stage< GivenState >
         return self();
     }
 
-    public GivenState regex_sniffer( String jsonRegexPath )
+    public GivenState a_regex_sniffer( String jsonRegexPath )
     {
-        regexSniffer = new RegexSniffer()
-                .withJsonRegexFile( jsonRegexPath );
+        regexSniffer = new RegexSniffer().withJsonRegexFile( jsonRegexPath );
 
         truffler.getSniffers().add( regexSniffer );
 
         return self();
     }
 
-    public GivenState earliest_commit( String earliestCommitId)
+    public GivenState a_regex_sniffer( String... pairs )
     {
-        truffler.setEarliestCommitId( earliestCommitId );
+        if( Objects.isNull( pairs ) || pairs.length % 2 != 0 )
+        {
+            throw new RuntimeException( "pairs must have an even number of strings" );
+        }
+
+        Map< String, String > regexes = new HashMap<>();
+
+        IntStream
+                .range( 0, pairs.length / 2 )
+                .forEach( i -> regexes.put( pairs[ i * 2 ], pairs[ i * 2 + 1 ] ) );
+
+        regexSniffer = new RegexSniffer().withRegex( regexes );
+
+        truffler.getSniffers().add( regexSniffer );
 
         return self();
     }
 
-    public GivenState first_commit()
+    public GivenState to_earliest_commit( int commitIndex )
     {
-        if ( firstCommitId != null)
+        if ( commitIndex >= commitIds.size())
+        {
+            throw new RuntimeException( format("commit index [%s] is not less than commitIds.size [%s]", commitIndex, commitIds.size()) );
+        }
+
+        truffler.setEarliestCommitId( commitIds.get( commitIndex ) );
+
+        return self();
+    }
+
+
+    private void writeFile( String filename, String data )
+    {
+        File newFile = new File( tempGitPath.toFile(), filename );
+
+        try( PrintWriter out = new PrintWriter( newFile ) )
+        {
+            out.println( data );
+            out.flush();
+        } catch( FileNotFoundException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    public GivenState an_initial_commit_of( String filename, String data )
+    {
+        if( firstCommitId != null )
         {
             throw new RuntimeException( "firstCommitId already exists" );
         }
 
-        String filename = "first-commit.txt";
-
         try
         {
+            writeFile( filename, data );
+
             Repository repo = truffler.openRepo();
 
             Git git = new Git( repo );
-
-            File newFile = new File( tempGitPath.toFile(), filename );
-
-            try (PrintWriter out = new PrintWriter(newFile)) {
-                out.println("testing testing 123");
-            }
 
             git.add().addFilepattern( filename ).call();
 
             RevCommit rev = git
                     .commit()
                     .setAuthor( "tul_urte", "tul_urte@brentcroft.com" )
-                    .setMessage( "First commit" )
+                    .setMessage( "Initial commit" )
                     .call();
 
             firstCommitId = rev.getId().getName();
 
+            commitIds.add( firstCommitId );
+
+        } catch( Exception e )
+        {
+            throw new RuntimeException( e );
         }
-        catch (Exception e)
+
+        return self();
+    }
+
+    public GivenState another_commit_of( String filename, String data )
+    {
+        try
+        {
+            writeFile( filename, data );
+
+            Repository repo = truffler.openRepo();
+
+            Git git = new Git( repo );
+
+            git.add().addFilepattern( filename ).call();
+
+            RevCommit rev = git
+                    .commit()
+                    .setAuthor( "tul_urte", "tul_urte@brentcroft.com" )
+                    .setMessage( "Another commit" )
+                    .call();
+
+            commitIds.add( rev.getId().getName() );
+
+        } catch( Exception e )
         {
             throw new RuntimeException( e );
         }

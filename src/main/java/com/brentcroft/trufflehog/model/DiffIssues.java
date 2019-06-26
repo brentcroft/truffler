@@ -19,9 +19,10 @@ public class DiffIssues
     public String toString()
     {
         return format(
-                "path=[%s] parent=[%s]%n    %s",
+                "path=[%s] parent=[%s] issues=[%s]%n    %s",
                 diffEntry.getNewPath(),
                 diffEntry.getNewId().name(),
+                issues.size(),
                 issues
                         .stream()
                         .map( Object::toString )

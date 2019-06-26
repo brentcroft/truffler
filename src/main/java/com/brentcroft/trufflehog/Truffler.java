@@ -24,6 +24,7 @@ import org.eclipse.jgit.treewalk.EmptyTreeIterator;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -39,12 +40,11 @@ public class Truffler
 
     public int maxDepth = Integer.MAX_VALUE;
 
-    private String repositoryDirectory = "./.git";
+    private String repositoryDirectory = ".";
     private String earliestCommitId = null;
 
     private final List< Sniffer > sniffers = new ArrayList<>();
     private final List< Receiver > receivers = new ArrayList<>();
-
 
     public void truffle()
     {
@@ -88,7 +88,6 @@ public class Truffler
         }
     }
 
-
     private void processCommits( Repository repo, RevWalk walk, RevCommit commit, int depth, Set< String > alreadySeen ) throws IOException
     {
         String commitId = commit.getId().name();
@@ -127,6 +126,7 @@ public class Truffler
         AbstractTreeIterator oldTreeIter = new EmptyTreeIterator();
         ObjectReader reader = repo.newObjectReader();
         AbstractTreeIterator newTreeIter = new CanonicalTreeParser( null, reader, commit.getTree() );
+
         try( DiffFormatter df = new DiffFormatter( new ByteArrayOutputStream() ) )
         {
             df.setRepository( repo );
@@ -145,7 +145,6 @@ public class Truffler
         }
     }
 
-
     private void processDiffEntries(Repository repo, RevCommit commit, List< DiffEntry > entries)
     {
         CommitIssues commitIssues = new CommitIssues( commit );
@@ -162,8 +161,6 @@ public class Truffler
         }
     }
 
-
-
     private List< DiffIssues > notifySniffers( Repository repo, DiffEntry diffEntry )
     {
         return sniffers
@@ -175,13 +172,12 @@ public class Truffler
                 .collect( Collectors.toList() );
     }
 
-
     public Repository openRepo()
     {
         try
         {
             return new FileRepositoryBuilder()
-                    .setGitDir( new File( repositoryDirectory ) )
+                    .setGitDir( Paths.get( repositoryDirectory, ".git" ).toFile() )
                     .readEnvironment() // scan environment GIT_* variables
                     .findGitDir() // scan up the file system tree
                     .build();
@@ -190,6 +186,4 @@ public class Truffler
             throw new TrufflerException( e );
         }
     }
-
-
 }

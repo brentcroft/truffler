@@ -10,8 +10,6 @@ import org.eclipse.jgit.lib.Repository;
 import java.util.*;
 import java.util.stream.IntStream;
 
-import static java.lang.String.format;
-
 public class EntropySniffer implements Sniffer
 {
 
@@ -62,31 +60,10 @@ public class EntropySniffer implements Sniffer
 
                                 if( entropy > charBase.getThreshold() )
                                 {
-                                    issues.add( new Issue( "entropy", text )
-                                    {
-                                        String TYPE = "op";
-                                        String SCORE = "score";
-
-                                        {
-                                            getAttributes().put( TYPE, charBase.getName() );
-                                            getAttributes().put( SCORE, entropy );
-                                        }
-
-                                        public String toString()
-                                        {
-                                            return format(
-                                                    "[%s=%.4f] %s, %s",
-                                                    charBase.getName(),
-                                                    entropy,
-                                                    text,
-                                                    getDiffEntryText() );
-                                        }
-
-                                        public String getDiffEntryText()
-                                        {
-                                            return "";
-                                        }
-                                    } );
+                                    issues.add(
+                                            new Issue( "entropy", text )
+                                                    .withAttribute( "op", charBase.getName() )
+                                                    .withAttribute( "score", entropy ) );
                                 }
                             } );
                 }
@@ -118,14 +95,14 @@ public class EntropySniffer implements Sniffer
                 .map( charset::charAt )
                 .forEach( b -> {
 
-                    long occurences = IntStream
+                    long occurrences = IntStream
                             .range( 0, data.length() )
                             .filter( i -> b == data.charAt( i ) )
                             .count();
 
-                    if( occurences > 0 )
+                    if( occurrences > 0 )
                     {
-                        double ratio = ( double ) occurences / data.length();
+                        double ratio = ( double ) occurrences / data.length();
 
                         entropy[ 0 ] += ratio * mathLog( ratio, 2 );
                     }
