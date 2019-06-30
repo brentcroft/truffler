@@ -2,8 +2,8 @@ package com.brentcroft.trufflehog;
 
 import com.brentcroft.trufflehog.model.CommitIssues;
 import com.brentcroft.trufflehog.model.DiffIssues;
-import com.brentcroft.trufflehog.model.Receiver;
-import com.brentcroft.trufflehog.model.Sniffer;
+import com.brentcroft.trufflehog.receiver.Receiver;
+import com.brentcroft.trufflehog.sniffer.Sniffer;
 import com.brentcroft.trufflehog.util.JUL;
 import com.brentcroft.trufflehog.util.TrufflerException;
 import lombok.Getter;
@@ -22,10 +22,15 @@ import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.EmptyTreeIterator;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Getter
 @Setter
@@ -37,10 +42,14 @@ public class Truffler
         JUL.install();
     }
 
-    public int maxDepth = Integer.MAX_VALUE;
+
+    private static final Pattern DIFF_SEPARATOR = Pattern.compile( "@@[\\s\\-+,\\d]+@@", Pattern.MULTILINE );
+    private static final Pattern LINES_SEPARATOR = Pattern.compile( "[\\r\\n]+", Pattern.MULTILINE );
+
 
     private String repositoryDirectory = ".";
     private String earliestCommitId = null;
+    private int maxDepth = Integer.MAX_VALUE;
 
     private final List< Sniffer > sniffers = new ArrayList<>();
     private final List< Receiver > receivers = new ArrayList<>();
@@ -55,7 +64,6 @@ public class Truffler
                 ObjectId headId = repo.resolve( Constants.HEAD );
                 String headName = headId.name();
 
-                receivers.forEach( Receiver::open );
 
                 Ref branch = git
                         .branchList()
@@ -65,6 +73,12 @@ public class Truffler
                         .filter( ref -> headName.equals( ref.getObjectId().name() ) )
                         .findAny()
                         .orElseThrow( () -> new RuntimeException( "No branch named: " + headId ) );
+
+                Map<String, String> attr = new HashMap<>(  );
+                attr.put( "branch", branch.getName() );
+                attr.put( "repo", new File(repo.getIdentifier()).getParentFile().getAbsolutePath() );
+
+                receivers.forEach( r->r.open( attr ) );
 
                 try( RevWalk walk = new RevWalk( repo ) )
                 {
@@ -160,14 +174,53 @@ public class Truffler
         }
     }
 
+
+    private String getDiffEntryText( Repository repo, DiffEntry diffEntry )
+    {
+        try
+        {
+            OutputStream out = new ByteArrayOutputStream();
+
+            DiffFormatter diffFormatter = new DiffFormatter( out );
+
+            diffFormatter.setRepository( repo );
+
+            diffFormatter.format( diffFormatter.toFileHeader( diffEntry ) );
+
+            String rawText = out.toString();
+
+            Matcher m = DIFF_SEPARATOR.matcher( rawText );
+
+            if ( m.find())
+            {
+                rawText = rawText.substring( m.end() );
+            }
+
+            String[] textLines = LINES_SEPARATOR.split( rawText );
+
+            return Stream.of(textLines)
+                    .filter( s -> s.length() > 1 )
+                    .map( s -> s.substring( 1 ) )
+                    .filter( s -> s.length() > 0 )
+                    .collect( Collectors.joining( "\n" ) );
+
+        } catch( IOException e )
+        {
+            throw new TrufflerException( e );
+        }
+    }
+
+
+
     private List< DiffIssues > notifySniffers( Repository repo, DiffEntry diffEntry )
     {
+        String diffEntryText =  getDiffEntryText( repo, diffEntry );
         return sniffers
                 .stream()
-                .map( sniffer -> sniffer.sniff( repo, diffEntry ) )
+                .map( sniffer -> sniffer.sniff( diffEntryText ) )
                 .filter( Objects::nonNull )
                 .filter( issues -> ! issues.isEmpty() )
-                .map( issues -> new DiffIssues( diffEntry, issues ) )
+                .map( issues -> new DiffIssues( diffEntry, diffEntryText, issues ) )
                 .collect( Collectors.toList() );
     }
 

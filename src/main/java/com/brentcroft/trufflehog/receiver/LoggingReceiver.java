@@ -1,7 +1,6 @@
 package com.brentcroft.trufflehog.receiver;
 
 import com.brentcroft.trufflehog.model.CommitIssues;
-import com.brentcroft.trufflehog.model.Receiver;
 import lombok.extern.java.Log;
 
 import static java.lang.String.format;

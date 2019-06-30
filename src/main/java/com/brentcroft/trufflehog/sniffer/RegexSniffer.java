@@ -1,11 +1,9 @@
 package com.brentcroft.trufflehog.sniffer;
 
 import com.brentcroft.trufflehog.model.Issue;
-import com.brentcroft.trufflehog.model.Sniffer;
 import com.brentcroft.trufflehog.util.TrufflerException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eclipse.jgit.diff.DiffEntry;
-import org.eclipse.jgit.lib.Repository;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,9 +19,27 @@ public class RegexSniffer implements Sniffer
     {
         try
         {
-            return withRegex(
-                    new ObjectMapper()
-                            .readValue( new File( path ), Map.class ) );
+            return withRegex( new ObjectMapper().readValue( new File( path ), STRING_MAP ) );
+
+        } catch( IOException e )
+        {
+            throw new TrufflerException( e );
+        }
+    }
+
+    private static final TypeReference STRING_MAP = new TypeReference< Map< String, String > >()
+    {
+    };
+
+    public RegexSniffer withJsonRegexText( String text )
+    {
+        if( Objects.isNull( text ) || text.isEmpty() )
+        {
+            throw new IllegalArgumentException( "JSON regex text is empty" );
+        }
+        try
+        {
+            return withRegex( new ObjectMapper().readValue( text, STRING_MAP ) );
 
         } catch( IOException e )
         {
@@ -40,32 +56,25 @@ public class RegexSniffer implements Sniffer
 
 
     @Override
-    public List< Issue > sniff( Repository repo, DiffEntry diffEntry )
+    public Set< Issue > sniff( String diff )
     {
-        return investigateEntry( repo, diffEntry );
-    }
-
-
-    private List< Issue > investigateEntry( Repository repo, DiffEntry diffEntry )
-    {
-        String diffEntryText = getDiffEntryText( repo, diffEntry );
-
-        if( Objects.isNull( diffEntryText ) || diffEntryText.isEmpty() )
+        if( Objects.isNull( diff ) || diff.isEmpty() )
         {
-            return Collections.emptyList();
+            return Collections.emptySet();
         }
 
-        List< Issue > issues = new ArrayList<>();
+        Set< Issue > issues = new HashSet<>();
 
         regex.forEach( ( k, pattern ) -> {
-            Matcher m = pattern.matcher( diffEntryText );
+
+            Matcher m = pattern.matcher( diff );
 
             int[] occurrences = {0};
             String[] text = {null};
 
             while( m.find() )
             {
-                text[ 0 ] = diffEntryText.substring( m.start(), m.end() );
+                text[ 0 ] = diff.substring( m.start(), m.end() );
                 occurrences[ 0 ]++;
             }
 
@@ -80,5 +89,4 @@ public class RegexSniffer implements Sniffer
 
         return issues;
     }
-
 }

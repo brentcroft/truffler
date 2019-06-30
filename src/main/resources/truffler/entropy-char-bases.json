@@ -1,0 +1,12 @@
+{
+  "b64":{
+    "chars": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=@",
+    "threshold": 4.5,
+    "maxLength": 20
+  },
+  "hex":{
+    "chars": "1234567890abcdefABCDEF",
+    "threshold": 3,
+    "maxLength": 20
+  }
+}

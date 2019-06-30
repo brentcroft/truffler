@@ -1,13 +1,14 @@
 package com.brentcroft.trufflehog.sniffer;
 
 import com.brentcroft.trufflehog.model.Issue;
-import com.brentcroft.trufflehog.model.Sniffer;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.eclipse.jgit.diff.DiffEntry;
-import org.eclipse.jgit.lib.Repository;
 
+import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Getter
@@ -22,37 +23,66 @@ public class EntropySniffer implements Sniffer
 
     public static int MIN_LENGTH = 20;
 
-    private Set< String > knownStrings = new HashSet<>();
+    private final Set< String > knownStrings = new HashSet<>();
+
+    private final List< CharBase > charBases = new ArrayList<>();
 
 
-    @Override
-    public List< Issue > sniff( Repository repo, DiffEntry diffEntry )
+    private static final TypeReference OBJECT_MAP_MAP = new TypeReference< Map< String, Map< String, Object > > >()
     {
+    };
 
-        return investigateEntry( repo, diffEntry );
+    public EntropySniffer withJsonCharBases( String jsonCharBasesText )
+    {
+        try
+        {
+            Map< String, Map< String, Object > > bases = new ObjectMapper().readValue( jsonCharBasesText, OBJECT_MAP_MAP );
+
+            bases.forEach( ( key, charBaseMap ) -> {
+                charBaseMap.put( "name", key );
+                charBases.add( SimpleCharBase.fromMap( charBaseMap ) );
+            } );
+
+        } catch( IOException e )
+        {
+            throw new IllegalArgumentException( e );
+        }
+
+
+        return this;
     }
 
 
-    private List< Issue > investigateEntry( Repository repo, DiffEntry diffEntry )
+    public EntropySniffer withKnownStrings( List< String > strings )
     {
+        knownStrings.addAll( strings
+                .stream()
+                .filter( s -> ! s.startsWith( "#" ) )
+                .map( String::trim )
+                .filter( s -> ! s.isEmpty() )
+                .collect( Collectors.toList() ) );
 
-        String diffEntryText = getDiffEntryText( repo, diffEntry );
+        return this;
+    }
 
-        if( Objects.isNull( diffEntryText ) || diffEntryText.isEmpty() )
+
+    @Override
+    public Set< Issue > sniff( String diff )
+    {
+        if( Objects.isNull( diff ) || diff.isEmpty() )
         {
-            return Collections.emptyList();
+            return Collections.emptySet();
         }
 
-        List< Issue > issues = new ArrayList<>();
+        Set< Issue > issues = new HashSet<>();
 
-        for( String line : diffEntryText.split( "\n" ) )
+        for( String line : diff.split( "\n" ) )
         {
-            for( String word : line.split( " " ) )
+            for( String word : line.split( "[ \\s.()]" ) )
             {
-                for( CharBase charBase : EntropyCharBase.values() )
+                for( CharBase charBase : charBases )
                 {
-
-                    charBase.stringsOfSet( word, MIN_LENGTH )
+                    charBase.stringsOfSet( word )
                             .stream()
                             .filter( text -> ! knownStrings.contains( text ) )
                             .forEach( text -> {
@@ -94,11 +124,12 @@ public class EntropySniffer implements Sniffer
         IntStream
                 .range( 0, charset.length() )
                 .map( charset::charAt )
-                .forEach( b -> {
+                .distinct()
+                .forEach( c -> {
 
                     long occurrences = IntStream
                             .range( 0, data.length() )
-                            .filter( i -> b == data.charAt( i ) )
+                            .filter( i -> c == data.charAt( i ) )
                             .count();
 
                     if( occurrences > 0 )
@@ -113,7 +144,7 @@ public class EntropySniffer implements Sniffer
     }
 
 
-    interface CharBase
+    public interface CharBase
     {
         String getName();
 
@@ -121,22 +152,9 @@ public class EntropySniffer implements Sniffer
 
         double getThreshold();
 
-        List< String > stringsOfSet( String word, int length );
-    }
+        int getMaxLength();
 
-    @RequiredArgsConstructor
-    @Getter
-    enum EntropyCharBase implements CharBase
-    {
-
-        BASE64( "b64", BASE64_CHARS, BASE64_THRESHOLD ),
-        HEX( "hex", HEX_CHARS, HEX_THRESHOLD );
-
-        private final String name;
-        private final String charset;
-        private final double threshold;
-
-        public List< String > stringsOfSet( String word, int minLength )
+        default List< String > stringsOfSet( String word )
         {
             int count = 0;
             StringBuilder letters = new StringBuilder();
@@ -144,13 +162,13 @@ public class EntropySniffer implements Sniffer
             for( char c : word.toCharArray() )
             {
                 // include all charset chars
-                if( charset.indexOf( c ) >= 0 )
+                if( getCharset().indexOf( c ) >= 0 )
                 {
                     letters.append( c );
                     count += 1;
                 }
                 // if exceeded length then collect and continue
-                else if( count > minLength )
+                else if( count > getMaxLength() )
                 {
                     strings.add( letters.toString() );
                     letters.setLength( 0 );
@@ -158,11 +176,31 @@ public class EntropySniffer implements Sniffer
                 }
             }
             // if exceeded length then collect
-            if( count > minLength )
+            if( count > getMaxLength() )
             {
                 strings.add( letters.toString() );
             }
             return strings;
         }
     }
+
+    @RequiredArgsConstructor
+    @Getter
+    static class SimpleCharBase implements CharBase
+    {
+        private final String name;
+        private final String charset;
+        private final double threshold;
+        private final int maxLength;
+
+        static SimpleCharBase fromMap( Map< String, ? > entries )
+        {
+            return new SimpleCharBase(
+                    ( String ) entries.get( "name" ),
+                    ( String ) entries.get( "chars" ),
+                    ( ( Number ) entries.get( "threshold" ) ).doubleValue(),
+                    ( ( Number ) entries.get( "maxLength" ) ).intValue() );
+        }
+    }
+
 }

@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.jgit.diff.DiffEntry;
 
-import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.lang.String.format;
@@ -14,7 +14,8 @@ import static java.lang.String.format;
 public class DiffIssues
 {
     private final DiffEntry diffEntry;
-    private final List< Issue > issues;
+    private final String diffText;
+    private final Set< Issue > issues;
 
     public String toString()
     {

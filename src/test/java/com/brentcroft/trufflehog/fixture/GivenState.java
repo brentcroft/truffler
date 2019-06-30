@@ -6,6 +6,7 @@ import com.brentcroft.trufflehog.receiver.TxtReceiver;
 import com.brentcroft.trufflehog.receiver.XmlReceiver;
 import com.brentcroft.trufflehog.sniffer.EntropySniffer;
 import com.brentcroft.trufflehog.sniffer.RegexSniffer;
+import com.brentcroft.trufflehog.util.Local;
 import com.brentcroft.trufflehog.util.TrufflerException;
 import com.tngtech.jgiven.Stage;
 import com.tngtech.jgiven.annotation.ProvidedScenarioState;
@@ -150,9 +151,9 @@ public class GivenState extends Stage< GivenState >
         return self();
     }
 
-    public GivenState an_entropy_sniffer()
+    public GivenState an_entropy_sniffer( String uri )
     {
-        entropySniffer = new EntropySniffer();
+        entropySniffer = new EntropySniffer().withJsonCharBases( Local.getFileText(uri) );
 
         truffler.getSniffers().add( entropySniffer );
 
@@ -296,7 +297,7 @@ public class GivenState extends Stage< GivenState >
 
     public GivenState ignored_strings( String... knownStrings )
     {
-        entropySniffer.getKnownStrings().addAll( Arrays.asList( knownStrings ) );
+        entropySniffer.withKnownStrings(Arrays.asList( knownStrings ) );
 
         return self();
     }

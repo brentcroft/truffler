@@ -2,10 +2,11 @@ package com.brentcroft.trufflehog.receiver;
 
 
 import com.brentcroft.trufflehog.model.CommitIssues;
-import com.brentcroft.trufflehog.model.Receiver;
+import com.brentcroft.trufflehog.util.Local;
 import com.brentcroft.trufflehog.util.TrufflerException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -15,17 +16,13 @@ import org.w3c.dom.Text;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.StringWriter;
+import javax.xml.transform.stream.StreamSource;
+import java.io.*;
 import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.*;
 
 import static java.lang.String.format;
 
@@ -38,11 +35,16 @@ public class XmlReceiver implements Receiver
     public static final SimpleDateFormat SDF = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss" );
 
     private final String filename;
+
     private Document document;
     private Element element;
 
+    @Setter
+    private String xsltUri;
+    private String serialization;
+
     @Override
-    public void open()
+    public void open( Map< String, String > attr )
     {
         try
         {
@@ -51,8 +53,23 @@ public class XmlReceiver implements Receiver
                     .newDocumentBuilder()
                     .newDocument();
 
+            if( Objects.nonNull( xsltUri ) && ! xsltUri.isEmpty() )
+            {
+                document
+                        .appendChild(
+                                document
+                                        .createProcessingInstruction(
+                                                "xml-stylesheet",
+                                                format( "type=\"text/xsl\" href=\"%s\"", xsltUri ) ) );
+            }
+
             element = document.createElement( "truffle" );
             element.setAttribute( "created", SDF.format( new Date() ) );
+
+            if( Objects.nonNull( attr ) )
+            {
+                attr.forEach( ( k, v ) -> element.setAttribute( k, v ) );
+            }
 
             document.appendChild( element );
 
@@ -82,7 +99,6 @@ public class XmlReceiver implements Receiver
                 .forEach( di -> {
                     Element diElement = document.createElement( "diff" );
 
-
                     String newPath = di.getDiffEntry().getNewPath();
                     String oldPath = di.getDiffEntry().getOldPath();
 
@@ -101,6 +117,13 @@ public class XmlReceiver implements Receiver
                             diElement.setAttribute( "path", oldPath );
                         }
                     }
+
+                    Element textElement = document.createElement( "text" );
+                    diElement.appendChild( textElement );
+
+                    textElement.appendChild( document.createCDATASection( di.getDiffText() ) );
+
+
                     ciElement.appendChild( diElement );
 
                     di
@@ -132,43 +155,98 @@ public class XmlReceiver implements Receiver
         element.appendChild( ciElement );
     }
 
+
     @Override
     public void close()
     {
-        //never closes
+        preCloseNotification();
+
+        serialization = serialize();
+    }
+
+    public interface CloseListener
+    {
+        void closing( XmlReceiver xmlReceiver );
+    }
+
+    private void preCloseNotification()
+    {
+        closeListeners.forEach( cl -> {
+            cl.closing( XmlReceiver.this );
+        } );
+    }
+
+    private List< CloseListener > closeListeners = new ArrayList<>();
+
+    public XmlReceiver withCloseListener( CloseListener cl )
+    {
+        closeListeners.add( cl );
+        return this;
+    }
+
+
+    private String getTransformResult( Transformer transformer ) throws TransformerException
+    {
+
+        StreamResult result = new StreamResult( new StringWriter() );
+
+        DOMSource source = new DOMSource( document );
+        transformer.transform( source, result );
+
+        return result.getWriter().toString();
+    }
+
+
+    private void maybeSave( String filename, String text )
+    {
+        try
+        {
+            File parentDir = new File( filename ).getParentFile();
+            if( ! parentDir.exists() )
+            {
+                parentDir.mkdirs();
+            }
+
+            FileWriter fw = new FileWriter( filename );
+
+            fw.write( text );
+
+            fw.close();
+
+        } catch( IOException e )
+        {
+            throw new TrufflerException( e );
+        }
     }
 
     public String serialize()
     {
         try
         {
-            Transformer transformer = TransformerFactory.newInstance().newTransformer();
+            TransformerFactory factory = TransformerFactory.newInstance();
+
+            Transformer transformer = factory.newTransformer();
 
             transformer.setOutputProperty( OutputKeys.INDENT, "yes" );
-            transformer.setOutputProperty( "{http://xml.apache.org/xslt}indent-amount", "2" );
+            transformer.setOutputProperty( "{http://xml.apache.org/xslt}indent-amount", "4" );
 
-            StreamResult result = new StreamResult( new StringWriter() );
+            String xmlText = getTransformResult( transformer );
 
-            DOMSource source = new DOMSource( document );
-            transformer.transform( source, result );
+            maybeSave( filename, xmlText );
 
-            String xmlText = result.getWriter().toString();
 
-            if( ! ( filename == null || filename.isEmpty() ) )
+            if( Objects.nonNull( xsltUri ) && ! xsltUri.isEmpty() )
             {
-                try
-                {
-                    FileWriter fw = new FileWriter( filename );
+                Templates templates = factory.newTemplates(
+                        new StreamSource(
+                                new StringReader(
+                                        Local.getFileText( xsltUri ) ) ) );
 
-                    fw.write( xmlText );
+                String xml2Text = getTransformResult( templates.newTransformer() );
 
-                    fw.close();
-
-                } catch( IOException e )
-                {
-                    throw new TrufflerException( e );
-                }
+                maybeSave( filename.replace( ".xml", ".html" ), xml2Text );
             }
+
 
             return xmlText;
 

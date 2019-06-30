@@ -1,5 +1,6 @@
 package com.brentcroft.trufflehog.model;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -11,6 +12,7 @@ import static java.lang.String.format;
 
 @RequiredArgsConstructor
 @Getter
+@EqualsAndHashCode
 public class Issue
 {
     private final String tag;
