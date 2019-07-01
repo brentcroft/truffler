@@ -4,15 +4,18 @@
         <html>
             <head>
                 <style>
-                    body, div, td {
+                    body, div, td, p {
                         font-family: "Arial", san-serif;
                         margin: 10px;
                     }
-                    .issues {
-                        margin: 5pt;
+                    .diff {
+                        padding-bottom: 10px;
                     }
                     table, textarea {
                         width: 100%;
+                    }
+                    td {
+                        padding: 5px;
                     }
                     td:nth-child(1)
                     {
@@ -28,11 +31,13 @@
                     .commit {
                         font-weight: bold;
                         border-top: 1px solid;
+                        padding-bottom: 10px;
                     }
 
                     .path
                     {
                         border: 1pt dotted black;
+                        color: blue;
                         background: whitesmoke;
                         font-weight: normal;
                     }
@@ -62,17 +67,27 @@
 
                     #leftColumn {
                         flex: 1;
+                        padding: 10px;
+                        border-top: 1px dotted red;
+                        border-left: 1px dotted red;
                     }
 
                     #rightColumn {
                         flex: 0 0 70%;
+                        padding: 10px;
+                        border-top: 1px dotted red;
+                        border-left: 1px dotted red;
+                    }
+
+                    .panel-title
+                    {
+                        font-weight: bold;
                     }
 
                     .commit-list {
                         overflow: auto;
                         max-height: 80vh;
                     }
-
                 </style>
                 <script>
                     function addKnownString( text )
@@ -85,12 +100,26 @@
                         }
                     }
 
+                    function removePath( path )
+                    {
+                        var ks = document.getElementById( "removePaths" )
+                        if ( ! ks.value.includes( path ) )
+                        {
+                            ks.value += "\n" + path
+                        }
+                    }
+                    function replaceString( text )
+                    {
+                        var ks = document.getElementById( "replaceStrings" )
+                        if ( ! ks.value.includes( text ) )
+                        {
+                            ks.value += "\n" + text
+                        }
+                    }
+
                     function selectText( text )
                     {
-                        if ( window.find( text, true ) )
-                        {
-
-                        }
+                        window.find( text, true )
                     }
 
                 </script>
@@ -104,27 +133,49 @@
                 </p>
                 <div id="columns">
                     <div id="leftColumn">
-                        <p>
+                        <p class="panel-title">
                             Known Strings
                         </p>
                         <p>
-                            New strings to add:
+                            New strings to exempt:
                         </p>
-                        <textarea id="knownStrings" rows="15">
+                        <textarea id="knownStrings" rows="10"> </textarea>
+                        <p>
+                            Existing exemptions:
+                            <code>truffler/entropy-known-strings.txt</code>:
+                        </p>
+                        <textarea id="existingKnownStrings" rows="10" disabled="true">
+                            <xsl:value-of select="entropy/known-strings"/>
+                        </textarea>
+
+                        <br/>
+                        <hr/>
+
+                        <p class="panel-title">
+                            History Rewriting
+                        </p>
+                        <p>
+                            Strings to replace (with tokens):
+                        </p>
+                        <textarea id="replaceStrings" rows="5">
                         </textarea>
                         <p>
-                            Existing in file: <code>truffler/entropy-known-strings.txt</code>:
+                            Paths to remove:
                         </p>
-                        <textarea id="existingKnownStrings" rows="15" disabled="true">
-                            <xsl:value-of select="entropy/known-strings"/>
+                        <textarea id="removePaths" rows="5">
                         </textarea>
                     </div>
                     <div id="rightColumn">
-                        <p>
+                        <p class="panel-title">
                             Issues:
                         </p>
                         <div class="commit-list">
-                            <xsl:apply-templates select="commit"/>
+                            <xsl:choose>
+                                <xsl:when test="commit">
+                                    <xsl:apply-templates select="commit"/>
+                                </xsl:when>
+                                <xsl:otherwise>(no issues)</xsl:otherwise>
+                            </xsl:choose>
                         </div>
                     </div>
                 </div>
@@ -148,7 +199,10 @@
         <div class="diff">
             <table class="issues">
                 <tr>
-                    <td colspan="3">Path: <span class="path"><xsl:value-of select="@path"/><xsl:value-of select="@new-path"/></span></td>
+                    <td colspan="3">
+                        Path: <span class="path"><xsl:value-of select="@path"/><xsl:value-of select="@new-path"/></span>
+                        <input type="button" value="remove" onclick="removePath( '{@path}{@new-path}' )"/>
+                    </td>
                 </tr>
                 <xsl:for-each select="*[ name() != 'text' ]">
                     <tr>
@@ -165,10 +219,10 @@
                         <td>
                             <xsl:choose>
                                 <xsl:when test="( name() = 'entropy' )">
-                                    <input type="button" value="add" onclick="addKnownString( '{.}' )"/>
+                                    <input type="button" value="exempt" onclick="addKnownString( '{.}' )"/>
                                 </xsl:when>
                                 <xsl:when test="( name() = 'regex' )">
-                                    <input type="button" value="per" onclick="addKnownString( '{.}' )"/>
+                                    <input type="button" value="remove" onclick="removeString( '{.}' )"/>
                                 </xsl:when>
                             </xsl:choose>
                         </td>
@@ -178,9 +232,11 @@
                     </tr>
                 </xsl:for-each>
             </table>
-            <textarea class="diff-text">
-                <xsl:value-of select="text"/>
-            </textarea>
+            <xsl:if test="text">
+                <textarea class="diff-text" disabled="true">
+                    <xsl:value-of select="text"/>
+                </textarea>
+            </xsl:if>
         </div>
     </xsl:template>
 </xsl:stylesheet>

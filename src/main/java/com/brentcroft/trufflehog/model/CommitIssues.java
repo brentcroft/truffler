@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 import static java.lang.String.format;
 
 @RequiredArgsConstructor
-@ToString
 @Getter
 public class CommitIssues
 {

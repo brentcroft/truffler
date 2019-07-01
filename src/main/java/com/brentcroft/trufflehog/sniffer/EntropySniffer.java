@@ -8,27 +8,22 @@ import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Getter
 public class EntropySniffer implements Sniffer
 {
+    private static final Pattern WORD_SEPARATOR = Pattern.compile( "[ \\s.,()\"]" );
 
-    private static final String BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=@.";
-    public static double BASE64_THRESHOLD = 4.5;
-
-    private static final String HEX_CHARS = "1234567890abcdefABCDEF";
-    public static double HEX_THRESHOLD = 3;
-
-    public static int MIN_LENGTH = 20;
 
     private final Set< String > knownStrings = new HashSet<>();
 
     private final List< CharBase > charBases = new ArrayList<>();
 
 
-    private static final TypeReference OBJECT_MAP_MAP = new TypeReference< Map< String, Map< String, Object > > >()
+    private static final TypeReference OBJECT_MAP_LIST = new TypeReference< List< Map< String, Object > > >()
     {
     };
 
@@ -36,32 +31,44 @@ public class EntropySniffer implements Sniffer
     {
         try
         {
-            Map< String, Map< String, Object > > bases = new ObjectMapper().readValue( jsonCharBasesText, OBJECT_MAP_MAP );
+            List< Map< String, Object > > bases = new ObjectMapper().readValue( jsonCharBasesText, OBJECT_MAP_LIST );
 
-            bases.forEach( ( key, charBaseMap ) -> {
-                charBaseMap.put( "name", key );
-                charBases.add( SimpleCharBase.fromMap( charBaseMap ) );
-            } );
+            bases
+                    .stream()
+                    .map( SimpleCharBase::fromMap )
+                    .forEach( scb -> {
+
+                        charBases
+                                .removeAll(
+                                        charBases
+                                                .stream()
+                                                .filter( cb -> cb.getName().equals( scb.getName() ) )
+                                                .collect( Collectors.toList() ) );
+
+                        charBases.add( scb );
+                    } );
+
+            return this;
 
         } catch( IOException e )
         {
             throw new IllegalArgumentException( e );
         }
-
-
-        return this;
     }
 
 
     public EntropySniffer withKnownStrings( List< String > strings )
     {
-        knownStrings.addAll( strings
-                .stream()
-                .filter( s -> ! s.startsWith( "#" ) )
-                .map( String::trim )
-                .filter( s -> ! s.isEmpty() )
-                .collect( Collectors.toList() ) );
-
+        if ( Objects.nonNull( strings ))
+        {
+            knownStrings
+                    .addAll( strings
+                            .stream()
+                            .filter( s -> ! s.startsWith( "#" ) )
+                            .map( String::trim )
+                            .filter( s -> ! s.isEmpty() )
+                            .collect( Collectors.toList() ) );
+        }
         return this;
     }
 
@@ -78,27 +85,29 @@ public class EntropySniffer implements Sniffer
 
         for( String line : diff.split( "\n" ) )
         {
-            for( String word : line.split( "[ \\s.()]" ) )
-            {
-                for( CharBase charBase : charBases )
-                {
-                    charBase.stringsOfSet( word )
-                            .stream()
-                            .filter( text -> ! knownStrings.contains( text ) )
-                            .forEach( text -> {
+            WORD_SEPARATOR
+                    .splitAsStream( line )
+                    .filter( word -> ! word.isEmpty() )
+                    .forEach( word -> {
+                        for( CharBase charBase : charBases )
+                        {
+                            charBase.stringsOfSet( word )
+                                    .stream()
+                                    .filter( text -> ! knownStrings.contains( text ) )
+                                    .forEach( text -> {
 
-                                double entropy = getShannonEntropy( charBase.getCharset(), text );
+                                        double entropy = getShannonEntropy( charBase.getCharset(), text );
 
-                                if( entropy > charBase.getThreshold() )
-                                {
-                                    issues.add(
-                                            new Issue( "entropy", text )
-                                                    .withAttribute( "op", charBase.getName() )
-                                                    .withAttribute( "score", entropy ) );
-                                }
-                            } );
-                }
-            }
+                                        if( entropy > charBase.getThreshold() )
+                                        {
+                                            issues.add(
+                                                    new Issue( "entropy", text )
+                                                            .withAttribute( "op", charBase.getName() )
+                                                            .withAttribute( "score", entropy ) );
+                                        }
+                                    } );
+                        }
+                    } );
         }
         return issues;
     }
@@ -186,7 +195,7 @@ public class EntropySniffer implements Sniffer
 
     @RequiredArgsConstructor
     @Getter
-    static class SimpleCharBase implements CharBase
+    public static class SimpleCharBase implements CharBase
     {
         private final String name;
         private final String charset;
@@ -203,4 +212,41 @@ public class EntropySniffer implements Sniffer
         }
     }
 
+    public void setEntropyThreshold( String tag, double threshold )
+    {
+        EntropySniffer.CharBase ocb = getCharBases()
+                .stream()
+                .filter( cb -> tag.equals( cb.getName() ) )
+                .findFirst()
+                .orElseThrow( () -> new IllegalArgumentException( "No charbase named: " + tag ) );
+
+        getCharBases()
+                .remove( ocb );
+
+        getCharBases()
+                .add( new EntropySniffer.SimpleCharBase(
+                        ocb.getName(),
+                        ocb.getCharset(),
+                        threshold,
+                        ocb.getMaxLength() ) );
+    }
+
+    public void setEntropyMaxLength( String tag, int maxLength )
+    {
+        EntropySniffer.CharBase ocb = getCharBases()
+                .stream()
+                .filter( cb -> tag.equals( cb.getName() ) )
+                .findFirst()
+                .orElseThrow( () -> new IllegalArgumentException( "No charbase named: " + tag ) );
+
+        getCharBases()
+                .remove( ocb );
+
+        getCharBases()
+                .add( new EntropySniffer.SimpleCharBase(
+                        ocb.getName(),
+                        ocb.getCharset(),
+                        ocb.getThreshold(),
+                        maxLength ) );
+    }
 }

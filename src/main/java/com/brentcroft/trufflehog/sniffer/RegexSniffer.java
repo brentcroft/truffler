@@ -15,11 +15,11 @@ public class RegexSniffer implements Sniffer
 {
     private Map< String, Pattern > regex = new HashMap<>();
 
-    public RegexSniffer withJsonRegexFile( String path )
+    public RegexSniffer withRegexJsonFile( String path )
     {
         try
         {
-            return withRegex( new ObjectMapper().readValue( new File( path ), STRING_MAP ) );
+            return withRegexMap( new ObjectMapper().readValue( new File( path ), STRING_MAP ) );
 
         } catch( IOException e )
         {
@@ -31,7 +31,7 @@ public class RegexSniffer implements Sniffer
     {
     };
 
-    public RegexSniffer withJsonRegexText( String text )
+    public RegexSniffer withRegexJsonText( String text )
     {
         if( Objects.isNull( text ) || text.isEmpty() )
         {
@@ -39,7 +39,7 @@ public class RegexSniffer implements Sniffer
         }
         try
         {
-            return withRegex( new ObjectMapper().readValue( text, STRING_MAP ) );
+            return withRegexMap( new ObjectMapper().readValue( text, STRING_MAP ) );
 
         } catch( IOException e )
         {
@@ -48,11 +48,18 @@ public class RegexSniffer implements Sniffer
     }
 
 
-    public RegexSniffer withRegex( Map< String, String > regexText )
+    public RegexSniffer withRegexMap( Map< String, String > regexText )
     {
         regexText.forEach( ( k, v ) -> regex.put( k, Pattern.compile( v ) ) );
         return this;
     }
+
+    public RegexSniffer withRegex( String name, String pattern )
+    {
+        regex.put( name, Pattern.compile( pattern ) );
+        return this;
+    }
+
 
 
     @Override

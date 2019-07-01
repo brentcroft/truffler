@@ -17,8 +17,8 @@ public class TrufflerTest extends ScenarioTest< GivenState, WhenAction, ThenOutc
                 .max_depth( 10000 )
                 .git_directory( "." )
                 .an_entropy_sniffer("truffler/entropy-char-bases.json")
-                .entropy_base64_threshold( 4 )
-                .entropy_hex_threshold( 1 )
+                .entropy_$_threshold( "b64", 3 )
+                .entropy_$_threshold( "hex", 1 )
                 //.a_regex_sniffer( "truffler/regex-rules.json" )
                 //.a_log_receiver()
                 .writes_xml_report_to( "target/truffler/truffles.xml" );

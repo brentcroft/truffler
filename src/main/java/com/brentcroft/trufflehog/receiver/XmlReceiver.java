@@ -6,7 +6,6 @@ import com.brentcroft.trufflehog.util.Local;
 import com.brentcroft.trufflehog.util.TrufflerException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.ToString;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -34,14 +33,14 @@ public class XmlReceiver implements Receiver
 {
     public static final SimpleDateFormat SDF = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss" );
 
-    private final String filename;
+    private String xmlFilename;
 
     private Document document;
     private Element element;
 
-    @Setter
-    private String xsltUri;
+    private String xslUri;
     private String serialization;
+    private boolean createIssueTextNodes = true;
 
     @Override
     public void open( Map< String, String > attr )
@@ -53,14 +52,14 @@ public class XmlReceiver implements Receiver
                     .newDocumentBuilder()
                     .newDocument();
 
-            if( Objects.nonNull( xsltUri ) && ! xsltUri.isEmpty() )
+            if( Objects.nonNull( xslUri ) && ! xslUri.isEmpty() )
             {
                 document
                         .appendChild(
                                 document
                                         .createProcessingInstruction(
                                                 "xml-stylesheet",
-                                                format( "type=\"text/xsl\" href=\"%s\"", xsltUri ) ) );
+                                                format( "type=\"text/xsl\" href=\"%s\"", xslUri ) ) );
             }
 
             element = document.createElement( "truffle" );
@@ -118,12 +117,6 @@ public class XmlReceiver implements Receiver
                         }
                     }
 
-                    Element textElement = document.createElement( "text" );
-                    diElement.appendChild( textElement );
-
-                    textElement.appendChild( document.createCDATASection( di.getDiffText() ) );
-
-
                     ciElement.appendChild( diElement );
 
                     di
@@ -131,25 +124,31 @@ public class XmlReceiver implements Receiver
                             .forEach( issue -> {
 
                                 Element iElement = document.createElement( issue.getTag() );
-                                Text iText = document.createTextNode( issue.getText() );
 
+                                Text iText = document.createTextNode( issue.getText() );
                                 iElement.appendChild( iText );
+
                                 diElement.appendChild( iElement );
 
                                 issue
                                         .getAttributes()
                                         .forEach( ( k, v ) -> {
-                                            if( v instanceof Double )
-                                            {
-                                                iElement.setAttribute( k, format( "%.4f", v ) );
-                                            }
-                                            else
-                                            {
-                                                iElement.setAttribute( k, format( "%s", v ) );
-                                            }
+                                            iElement
+                                                    .setAttribute(
+                                                            k,
+                                                            ( v instanceof Double )
+                                                            ? format( "%.4f", v )
+                                                            : format( "%s", v ) );
                                         } );
                             } );
 
+                    if( createIssueTextNodes )
+                    {
+                        Element textElement = document.createElement( "text" );
+                        diElement.appendChild( textElement );
+
+                        textElement.appendChild( document.createCDATASection( di.getDiffText() ) );
+                    }
                 } );
 
         element.appendChild( ciElement );
@@ -163,6 +162,28 @@ public class XmlReceiver implements Receiver
 
         serialization = serialize();
     }
+
+
+    public XmlReceiver withXmlFilename( String xmlFilename )
+    {
+        this.xmlFilename = xmlFilename;
+        return this;
+    }
+
+
+    public XmlReceiver withXslUri( String xslUri )
+    {
+        this.xslUri = xslUri;
+        return this;
+    }
+
+
+    public XmlReceiver withIssueTextNodes( boolean textNodes )
+    {
+        this.createIssueTextNodes = textNodes;
+        return this;
+    }
+
 
     public interface CloseListener
     {
@@ -232,19 +253,19 @@ public class XmlReceiver implements Receiver
 
             String xmlText = getTransformResult( transformer );
 
-            maybeSave( filename, xmlText );
+            maybeSave( xmlFilename, xmlText );
 
 
-            if( Objects.nonNull( xsltUri ) && ! xsltUri.isEmpty() )
+            if( Objects.nonNull( xslUri ) && ! xslUri.isEmpty() )
             {
                 Templates templates = factory.newTemplates(
                         new StreamSource(
                                 new StringReader(
-                                        Local.getFileText( xsltUri ) ) ) );
+                                        Local.getFileText( xslUri ) ) ) );
 
                 String xml2Text = getTransformResult( templates.newTransformer() );
 
-                maybeSave( filename.replace( ".xml", ".html" ), xml2Text );
+                maybeSave( xmlFilename.replace( ".xml", ".html" ), xml2Text );
             }
 
 

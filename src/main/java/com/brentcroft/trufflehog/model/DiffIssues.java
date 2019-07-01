@@ -30,4 +30,9 @@ public class DiffIssues
                         .collect( Collectors.joining( "\n    " ) )
         );
     }
+
+    public String getPath()
+    {
+        return diffEntry.getNewPath();
+    }
 }

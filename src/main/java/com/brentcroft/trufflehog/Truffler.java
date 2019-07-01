@@ -2,6 +2,7 @@ package com.brentcroft.trufflehog;
 
 import com.brentcroft.trufflehog.model.CommitIssues;
 import com.brentcroft.trufflehog.model.DiffIssues;
+import com.brentcroft.trufflehog.model.Issue;
 import com.brentcroft.trufflehog.receiver.Receiver;
 import com.brentcroft.trufflehog.sniffer.Sniffer;
 import com.brentcroft.trufflehog.util.JUL;
@@ -62,6 +63,12 @@ public class Truffler
             {
 
                 ObjectId headId = repo.resolve( Constants.HEAD );
+
+                if ( Objects.isNull(headId))
+                {
+                    throw new IllegalArgumentException("No object id for HEAD.");
+                }
+
                 String headName = headId.name();
 
 
@@ -164,9 +171,12 @@ public class Truffler
 
         for( DiffEntry entry : entries )
         {
-            commitIssues
-                    .getDiffIssues()
-                    .addAll( notifySniffers( repo, entry ) );
+            DiffIssues diffIssues = notifySniffers( repo, entry );
+
+            if ( Objects.nonNull( diffIssues ))
+            {
+                commitIssues.getDiffIssues().add( diffIssues );
+            }
         }
         if( commitIssues.hasIssues() )
         {
@@ -193,12 +203,12 @@ public class Truffler
 
             if ( m.find())
             {
-                rawText = rawText.substring( m.end() );
+                rawText = rawText.substring( m.start() );
             }
 
             String[] textLines = LINES_SEPARATOR.split( rawText );
 
-            return Stream.of(textLines)
+            return Stream.of( textLines )
                     .filter( s -> s.length() > 1 )
                     .map( s -> s.substring( 1 ) )
                     .filter( s -> s.length() > 0 )
@@ -212,16 +222,23 @@ public class Truffler
 
 
 
-    private List< DiffIssues > notifySniffers( Repository repo, DiffEntry diffEntry )
+    private DiffIssues notifySniffers( Repository repo, DiffEntry diffEntry )
     {
         String diffEntryText =  getDiffEntryText( repo, diffEntry );
-        return sniffers
+
+        Set<Issue > issues = sniffers
                 .stream()
                 .map( sniffer -> sniffer.sniff( diffEntryText ) )
+                .flatMap( Set::stream )
                 .filter( Objects::nonNull )
-                .filter( issues -> ! issues.isEmpty() )
-                .map( issues -> new DiffIssues( diffEntry, diffEntryText, issues ) )
-                .collect( Collectors.toList() );
+                .collect( Collectors.toSet() );
+
+        if ( Objects.isNull( issues ) || issues.isEmpty())
+        {
+            return null;
+        }
+
+        return new DiffIssues( diffEntry, diffEntryText, issues );
     }
 
     public Repository openRepo()
@@ -230,8 +247,8 @@ public class Truffler
         {
             return new FileRepositoryBuilder()
                     .setGitDir( Paths.get( repositoryDirectory, ".git" ).toFile() )
-                    .readEnvironment() // scan environment GIT_* variables
-                    .findGitDir() // scan up the file system tree
+                    .readEnvironment()
+                    .findGitDir()
                     .build();
         } catch( IOException e )
         {

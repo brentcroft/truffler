@@ -2,10 +2,7 @@ package com.brentcroft.trufflehog.util;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Scanner;
+import java.util.*;
 import java.util.function.Function;
 
 public class Local
@@ -21,6 +18,10 @@ public class Local
             try( Scanner scanner = new Scanner( is ) )
             {
                 return scanner.useDelimiter( "\\Z" ).next();
+            }
+            catch (NoSuchElementException e )
+            {
+                return "";
             }
         } );
     }

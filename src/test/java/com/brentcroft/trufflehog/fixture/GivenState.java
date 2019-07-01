@@ -144,7 +144,7 @@ public class GivenState extends Stage< GivenState >
 
     public GivenState writes_xml_report_to( String filename )
     {
-        xmlReceiver = new XmlReceiver( filename );
+        xmlReceiver = new XmlReceiver(  ).withXmlFilename( filename );
 
         truffler.getReceivers().add( xmlReceiver );
 
@@ -161,23 +161,57 @@ public class GivenState extends Stage< GivenState >
     }
 
 
-    public GivenState entropy_base64_threshold( double base64T )
+    public GivenState entropy_$_threshold( String tag, double threshold )
     {
-        EntropySniffer.BASE64_THRESHOLD = base64T;
+        EntropySniffer.CharBase ocb = entropySniffer
+                .getCharBases()
+                .stream()
+                .filter( cb -> tag.equals(cb.getName()))
+                .findFirst()
+                .orElseThrow(()->new IllegalArgumentException("No charbase named: " + tag));
+
+        entropySniffer
+                .getCharBases()
+                .remove(ocb);
+
+        entropySniffer
+                .getCharBases()
+                .add( new EntropySniffer.SimpleCharBase(
+                        ocb.getName(),
+                        ocb.getCharset(),
+                        threshold,
+                        ocb.getMaxLength()));
+        return self();
+    }
+
+    public GivenState entropy_$_max_length( String tag, int maxLength )
+    {
+        EntropySniffer.CharBase ocb = entropySniffer
+                .getCharBases()
+                .stream()
+                .filter( cb -> tag.equals(cb.getName()))
+                .findFirst()
+                .orElseThrow(()->new IllegalArgumentException("No charbase named: " + tag));
+
+        entropySniffer
+                .getCharBases()
+                .remove(ocb);
+
+        entropySniffer
+                .getCharBases()
+                .add( new EntropySniffer.SimpleCharBase(
+                        ocb.getName(),
+                        ocb.getCharset(),
+                        ocb.getThreshold(),
+                        maxLength));
 
         return self();
     }
 
-    public GivenState entropy_hex_threshold( double hexT )
-    {
-        EntropySniffer.HEX_THRESHOLD = hexT;
-
-        return self();
-    }
 
     public GivenState a_regex_sniffer( String jsonRegexPath )
     {
-        regexSniffer = new RegexSniffer().withJsonRegexFile( jsonRegexPath );
+        regexSniffer = new RegexSniffer().withRegexJsonFile( jsonRegexPath );
 
         truffler.getSniffers().add( regexSniffer );
 
@@ -197,7 +231,7 @@ public class GivenState extends Stage< GivenState >
                 .range( 0, pairs.length / 2 )
                 .forEach( i -> regexes.put( pairs[ i * 2 ], pairs[ i * 2 + 1 ] ) );
 
-        regexSniffer = new RegexSniffer().withRegex( regexes );
+        regexSniffer = new RegexSniffer().withRegexMap( regexes );
 
         truffler.getSniffers().add( regexSniffer );
 
