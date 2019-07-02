@@ -3,11 +3,21 @@ package com.brentcroft.trufflehog;
 import com.brentcroft.trufflehog.fixture.GivenState;
 import com.brentcroft.trufflehog.fixture.ThenOutcome;
 import com.brentcroft.trufflehog.fixture.WhenAction;
+import com.tngtech.jgiven.annotation.Hidden;
 import com.tngtech.jgiven.junit.ScenarioTest;
+import org.junit.After;
 import org.junit.Test;
 
 public class EntropySnifferTest extends ScenarioTest< GivenState, WhenAction, ThenOutcome >
 {
+    @After
+    @Hidden
+    public void cleanUp()
+    {
+        given().removeTemporaryFiles();
+    }
+
+
     @Test
     public void sniffs_entropy()
     {
