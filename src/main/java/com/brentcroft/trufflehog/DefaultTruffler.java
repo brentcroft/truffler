@@ -31,7 +31,7 @@ public class DefaultTruffler extends Truffler
 
     public DefaultTruffler()
     {
-        setMaxDepth( 10 );
+        setMaxDepth( 20 );
 
         List< String > knownStrings = null;
 
