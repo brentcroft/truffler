@@ -199,9 +199,14 @@
         <div class="diff">
             <table class="issues">
                 <tr>
-                    <td colspan="3">
-                        Path: <span class="path"><xsl:value-of select="@path"/><xsl:value-of select="@new-path"/></span>
+                    <td>
+                        Path:
+                    </td>
+                    <td>
                         <input type="button" value="remove" onclick="removePath( '{@path}{@new-path}' )"/>
+                    </td>
+                    <td>
+                        <span class="path"><xsl:value-of select="@path"/><xsl:value-of select="@new-path"/></span>
                     </td>
                 </tr>
                 <xsl:for-each select="*[ name() != 'text' ]">
@@ -219,10 +224,10 @@
                         <td>
                             <xsl:choose>
                                 <xsl:when test="( name() = 'entropy' )">
-                                    <input type="button" value="exempt" onclick="addKnownString( '{.}' )"/>
+                                    <input type="button" value="add" onclick="addKnownString( '{.}' )"/>
                                 </xsl:when>
                                 <xsl:when test="( name() = 'regex' )">
-                                    <input type="button" value="remove" onclick="removeString( '{.}' )"/>
+                                    <input type="button" value="replace" onclick="replaceString( '{.}' )"/>
                                 </xsl:when>
                             </xsl:choose>
                         </td>
