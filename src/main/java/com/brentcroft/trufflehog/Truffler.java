@@ -6,6 +6,7 @@ import com.brentcroft.trufflehog.model.Issue;
 import com.brentcroft.trufflehog.receiver.Receiver;
 import com.brentcroft.trufflehog.sniffer.Sniffer;
 import com.brentcroft.trufflehog.util.JUL;
+import com.brentcroft.trufflehog.util.Local;
 import com.brentcroft.trufflehog.util.TrufflerException;
 import lombok.Getter;
 import lombok.Setter;
@@ -21,6 +22,7 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.EmptyTreeIterator;
+import org.eclipse.jgit.util.FS_Win32;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -55,6 +57,30 @@ public class Truffler
     private final List< Sniffer > sniffers = new ArrayList<>();
     private final List< Receiver > receivers = new ArrayList<>();
 
+
+    public void cloneMirror( File mirrorDirectory )
+    {
+        if ( mirrorDirectory.exists())
+        {
+            Local.removeAll( mirrorDirectory.toPath() );
+        }
+
+        try( Git git = Git
+                .cloneRepository()
+                .setBare( false )
+                .setCloneAllBranches( true )
+                .setDirectory( mirrorDirectory )
+                .setURI( "./.git" )
+                .call() )
+        {
+            log.info( "Cloned to: " + mirrorDirectory );
+        } catch( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+
     public void truffle()
     {
         try( Repository repo = openRepo() )
@@ -64,9 +90,9 @@ public class Truffler
 
                 ObjectId headId = repo.resolve( Constants.HEAD );
 
-                if ( Objects.isNull(headId))
+                if( Objects.isNull( headId ) )
                 {
-                    throw new IllegalArgumentException("No object id for HEAD.");
+                    throw new IllegalArgumentException( "No object id for HEAD." );
                 }
 
                 String headName = headId.name();
@@ -81,11 +107,11 @@ public class Truffler
                         .findAny()
                         .orElseThrow( () -> new RuntimeException( "No branch named: " + headId ) );
 
-                Map<String, String> attr = new HashMap<>(  );
+                Map< String, String > attr = new HashMap<>();
                 attr.put( "branch", branch.getName() );
-                attr.put( "repo", new File(repo.getIdentifier()).getParentFile().getAbsolutePath() );
+                attr.put( "repo", new File( repo.getIdentifier() ).getParentFile().getAbsolutePath() );
 
-                receivers.forEach( r->r.open( attr ) );
+                receivers.forEach( r -> r.open( attr ) );
 
                 try( RevWalk walk = new RevWalk( repo ) )
                 {
@@ -173,7 +199,7 @@ public class Truffler
         {
             DiffIssues diffIssues = notifySniffers( repo, entry );
 
-            if ( Objects.nonNull( diffIssues ))
+            if( Objects.nonNull( diffIssues ) )
             {
                 commitIssues.getDiffIssues().add( diffIssues );
             }
@@ -201,7 +227,7 @@ public class Truffler
 
             Matcher m = DIFF_SEPARATOR.matcher( rawText );
 
-            if ( m.find())
+            if( m.find() )
             {
                 rawText = rawText.substring( m.start() );
             }
@@ -221,19 +247,18 @@ public class Truffler
     }
 
 
-
     private DiffIssues notifySniffers( Repository repo, DiffEntry diffEntry )
     {
-        String diffEntryText =  getDiffEntryText( repo, diffEntry );
+        String diffEntryText = getDiffEntryText( repo, diffEntry );
 
-        Set<Issue > issues = sniffers
+        Set< Issue > issues = sniffers
                 .stream()
                 .map( sniffer -> sniffer.sniff( diffEntryText ) )
                 .flatMap( Set::stream )
                 .filter( Objects::nonNull )
                 .collect( Collectors.toSet() );
 
-        if ( Objects.isNull( issues ) || issues.isEmpty())
+        if( Objects.isNull( issues ) || issues.isEmpty() )
         {
             return null;
         }
