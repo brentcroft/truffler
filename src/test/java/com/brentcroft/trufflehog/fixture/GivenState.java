@@ -59,19 +59,9 @@ public class GivenState extends Stage< GivenState >
     {
         if( Objects.nonNull( tempGitPath ) )
         {
-            try
-            {
-                Files
-                        .walk( tempGitPath )
-                        .sorted( Comparator.reverseOrder() )
-                        .map( Path::toFile )
-                        .forEach( File::delete );
+            Local.removeAll( tempGitPath );
 
-                System.out.println( "Cleaned up temporary directory" );
-            } catch( IOException e )
-            {
-                throw new TrufflerException( e );
-            }
+            tempGitPath.toFile().delete();
         }
     }
 
@@ -332,6 +322,13 @@ public class GivenState extends Stage< GivenState >
     public GivenState ignored_strings( String... knownStrings )
     {
         entropySniffer.withKnownStrings(Arrays.asList( knownStrings ) );
+
+        return self();
+    }
+
+    public GivenState clone_mirror( String mirrorDirectory )
+    {
+        truffler.cloneMirror( new File( mirrorDirectory ) );
 
         return self();
     }
