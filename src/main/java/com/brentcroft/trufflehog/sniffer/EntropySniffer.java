@@ -163,23 +163,33 @@ public class EntropySniffer implements Sniffer
 
         int getMaxLength();
 
+        default boolean contains( char c)
+        {
+            return getCharset().indexOf( c ) >= 0;
+        }
+
+
         default List< String > stringsOfSet( String word )
         {
             int count = 0;
             StringBuilder letters = new StringBuilder();
             List< String > strings = new ArrayList<>();
+
+            // include contiguous sequences of charset members
             for( char c : word.toCharArray() )
             {
-                // include all charset chars
-                if( getCharset().indexOf( c ) >= 0 )
+                if( contains( c ) )
                 {
                     letters.append( c );
                     count += 1;
                 }
                 // if exceeded length then collect and continue
-                else if( count > getMaxLength() )
+                else
                 {
-                    strings.add( letters.toString() );
+                    if( count > getMaxLength() )
+                    {
+                        strings.add( letters.toString() );
+                    }
                     letters.setLength( 0 );
                     count = 0;
                 }
@@ -201,6 +211,27 @@ public class EntropySniffer implements Sniffer
         private final String charset;
         private final double threshold;
         private final int maxLength;
+
+        private final Map<Character, Boolean> cache = new HashMap<>(  );
+
+        private boolean cache(char c, boolean inCharset)
+        {
+            cache.put( c, inCharset );
+            return inCharset;
+        }
+
+        @Override
+        public boolean contains( char c)
+        {
+            Boolean cacheHit = cache.get( c );
+
+            if ( Objects.isNull( cacheHit ))
+            {
+                return cache( c, CharBase.super.contains( c ) );
+            }
+
+            return cacheHit;
+        }
 
         static SimpleCharBase fromMap( Map< String, ? > entries )
         {
