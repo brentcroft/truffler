@@ -29,12 +29,14 @@ Derivative of TruffleHog
 *  Select sensitive files to be removed
 
 
-### Create a file to store known strings (to suppress):
+### Create a file to store known strings (explicitly publishing them):
 
     src/test/resources/truffle/entropy-known-strings.txt
 
-*  Populate the file with entries
-*  Rerun the test and inspect the report
+*  Populate the file with strings, one per line
+*  Re-run the test and inspect the report
+*  Eventually, any remaining issues must be resolved by rewriting history
+
 
 ## Rewriting History
 
