@@ -27,7 +27,7 @@ public class EntropySnifferTest extends ScenarioTest< GivenState, WhenAction, Th
                 .an_entropy_sniffer("truffler/entropy-char-bases.json")
 //                .a_log_receiver()
                 .a_text_receiver()
-                .an_initial_commit_of( "commit-001.txt", "thequickbrownfoxjumpedoverthealbatross1234567890" )
+                .an_initial_commit_of( "commit-001.txt", "thequickbrownfoxjumpedovertheaardvark1234567890" )
                 .another_commit_of( "commit-002.txt", "abcdefghijklmnopqrstuvwxyz0123456789" );
 
         when()
@@ -47,7 +47,7 @@ public class EntropySnifferTest extends ScenarioTest< GivenState, WhenAction, Th
                 .ignored_strings("abcdefghijklmnopqrstuvwxyz0123456789")
 //                .a_log_receiver()
                 .a_text_receiver()
-                .an_initial_commit_of( "commit-001.txt", "thequickbrownfoxjumpedoverthealbatross1234567890" )
+                .an_initial_commit_of( "commit-001.txt", "thequickbrownfoxjumpedovertheaardvark1234567890" )
                 .another_commit_of( "commit-002.txt", "abcdefghijklmnopqrstuvwxyz0123456789" );
 
         when()
