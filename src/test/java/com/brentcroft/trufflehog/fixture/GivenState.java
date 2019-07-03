@@ -325,11 +325,4 @@ public class GivenState extends Stage< GivenState >
 
         return self();
     }
-
-    public GivenState clone_mirror( String mirrorDirectory )
-    {
-        truffler.cloneMirror( new File( mirrorDirectory ) );
-
-        return self();
-    }
 }

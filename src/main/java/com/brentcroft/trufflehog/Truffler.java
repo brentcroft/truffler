@@ -58,28 +58,6 @@ public class Truffler
     private final List< Receiver > receivers = new ArrayList<>();
 
 
-    public void cloneMirror( File mirrorDirectory )
-    {
-        if ( mirrorDirectory.exists())
-        {
-            Local.removeAll( mirrorDirectory.toPath() );
-        }
-
-        try( Git git = Git
-                .cloneRepository()
-                .setBare( false )
-                .setCloneAllBranches( true )
-                .setDirectory( mirrorDirectory )
-                .setURI( "./.git" )
-                .call() )
-        {
-            log.info( "Cloned to: " + mirrorDirectory );
-        } catch( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
 
     public void truffle()
     {
