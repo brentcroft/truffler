@@ -51,12 +51,13 @@ Create a text file in the new directory named:
 
     strings-to-replace.txt
 
-*  add strings to be replaced, one per line
+*  copy strings to be replaced from the report
+*  NB: this file is deleted immediately after use
 
 
 Run the script.
 
-There will be two directories:
+There will be two new directories:
 
     <project>.git
     The bare mirror repository that was edited.
@@ -66,3 +67,4 @@ There will be two directories:
 
 Review and test the <project> directory and if satisfactory, then push to the origin.
 
+*  Both these directories must be deleted, and the file ```strings-to-replace.txt``` recreated, before the process can be repeated

@@ -17,6 +17,9 @@ if exist %replace_file% (
 
     %BFG% --replace-text %replace_file% %project_name%.git
 
+    :: delete as soon as possible
+    del %replace_file%
+
     cd %project_name%.git
 
     git reflog expire --expire=now --all
