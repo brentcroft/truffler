@@ -1,5 +1,6 @@
 package com.brentcroft.trufflehog.fixture;
 
+import com.brentcroft.trufflehog.DefaultTruffler;
 import com.brentcroft.trufflehog.Truffler;
 import com.brentcroft.trufflehog.receiver.LoggingReceiver;
 import com.brentcroft.trufflehog.receiver.TxtReceiver;
@@ -69,6 +70,18 @@ public class GivenState extends Stage< GivenState >
     public GivenState a_truffler()
     {
         truffler = new Truffler();
+
+        return self();
+    }
+
+
+    public GivenState a_default_truffler()
+    {
+        truffler = new DefaultTruffler();
+
+        entropySniffer = ( ( DefaultTruffler ) truffler ).getEntropySniffer();
+        regexSniffer = ( ( DefaultTruffler ) truffler ).getRegexSniffer();
+        xmlReceiver = ( ( DefaultTruffler ) truffler ).getXmlReceiver();
 
         return self();
     }
@@ -201,7 +214,7 @@ public class GivenState extends Stage< GivenState >
 
     public GivenState a_regex_sniffer( String jsonRegexPath )
     {
-        regexSniffer = new RegexSniffer().withRegexJsonFile( jsonRegexPath );
+        regexSniffer = new RegexSniffer().withRegexJsonText( Local.getFileText( jsonRegexPath ) );
 
         truffler.getSniffers().add( regexSniffer );
 
