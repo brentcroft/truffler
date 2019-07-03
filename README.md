@@ -24,7 +24,7 @@ Derivative of TruffleHog
 
     target/truffler/truffler.html
 
-*  Select known high-entropy strings to ignore
+*  Select high-entropy strings to be known (so they won't show up in reports)
 *  Select sensitive strings to be replaced
 *  Select sensitive files to be removed
 
