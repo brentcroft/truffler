@@ -29,11 +29,19 @@ Derivative of TruffleHog
 
 ## Rewriting History
 
-Create a new directory and copy the windows script file **bfg.cmd** into it.
-Copy the bfg jar file into the new directory.
+Create a new directory and:
+    copy the windows script file **bfg.cmd** into it.
+    copy the bfg jar file into the new directory.
 
 Modify the script to set the repository directory name (aka project)
 and the modify the url, from the new directory, to the current directory ".git" directory.
+
+Create a text file in the new directory named:
+
+    strings-to-replace.txt
+
+*  add strings to be replaced, one per line
+
 
 Run the script.
 
