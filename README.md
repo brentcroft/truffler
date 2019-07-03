@@ -1,7 +1,13 @@
 # truffler
 Derivative of TruffleHog
 
-### Create a test class that inherits from TruffleHunt (a JUnit test):
+### Use Maven to build and install this kit into a maven repository.
+
+*  i.e.: ```mvn clean install```
+*  In some project, reference the kit via a pom dependency in test scope.
+
+
+### In some project, create a test class that inherits from TruffleHunt (a JUnit test):
 
     package example;
 
@@ -10,6 +16,9 @@ Derivative of TruffleHog
     public class TrufflerTest extends TruffleHunt
     {
     }
+
+*  Look at TruffleHunt and maybe override, or enhance, it's @Before method
+
 
 ### Run the test and open the test report file in a browser:
 
