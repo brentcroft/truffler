@@ -14,7 +14,7 @@ public class TruffleHunt
         truffler.getEntropySniffer().setEntropyThreshold( "b64", 4.5 );
         truffler.getEntropySniffer().setEntropyThreshold( "hex", 3.0 );
 
-        truffler.getRegexSniffer().withRegex( "ld", "la[z]ydog" );
+        truffler.getRegexSniffer().withRegex( "ld", "[a]lbatross" );
 
         truffler.getXmlReceiver().withIssueTextNodes( true );
     }
