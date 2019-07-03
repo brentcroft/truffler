@@ -39,6 +39,7 @@ Derivative of TruffleHog
 
 
 ## Rewriting History
+This uses [BFG](https://rtyley.github.io/bfg-repo-cleaner/)
 
 Create a new directory and:
 *  copy the windows script file **rewrite-history.cmd** into it.
