@@ -67,5 +67,5 @@ A new clone from the edited mirror repository.
 
 Review and test the ```<project>``` directory and if satisfactory, then push to the origin.
 
-*  For example, run the test in <project> to see that the sensitive strings no longer exist
+*  For example, run the TruffleHunt test in ```<project>``` and review the report to see that the sensitive strings no longer exist
 *  Both these directories must be deleted, and the file ```strings-to-replace.txt``` re-created, before the process can be repeated
