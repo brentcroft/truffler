@@ -15,6 +15,8 @@ import java.util.stream.IntStream;
 @Getter
 public class EntropySniffer implements Sniffer
 {
+    private static final double LOG_10_2 = Math.log10( 2 );
+
     private static final Pattern WORD_SEPARATOR = Pattern.compile( "[ \\s.,()\"]" );
 
 
@@ -112,15 +114,13 @@ public class EntropySniffer implements Sniffer
         return issues;
     }
 
-
-    // see: https://stackoverflow.com/questions/3719631/log-to-the-base-2-in-python
-    private double mathLog( double value, double base )
+    private double mathLog2( double value )
     {
-        return Math.log10( value ) / Math.log10( base );
+        return Math.log10( value ) / LOG_10_2;
     }
 
 
-    private float getShannonEntropy( String charset, String data )
+    public double getShannonEntropy( String charset, String data )
     {
 
         if( Objects.isNull( data ) || data.length() == 0 )
@@ -128,7 +128,7 @@ public class EntropySniffer implements Sniffer
             return 0;
         }
 
-        float[] entropy = {0};
+        double[] entropy = {0};
 
         IntStream
                 .range( 0, charset.length() )
@@ -145,11 +145,11 @@ public class EntropySniffer implements Sniffer
                     {
                         double ratio = ( double ) occurrences / data.length();
 
-                        entropy[ 0 ] += ratio * mathLog( ratio, 2 );
+                        entropy[ 0 ] += ratio * mathLog2( ratio );
                     }
                 } );
 
-        return - 1 * entropy[ 0 ];
+        return ( entropy[ 0 ] < 0 -1 ? -1 : 1 ) * entropy[ 0 ] ;
     }
 
 
@@ -176,6 +176,7 @@ public class EntropySniffer implements Sniffer
             List< String > strings = new ArrayList<>();
 
             // include contiguous sequences of charset members
+            // that ar bigger than the min length
             for( char c : word.toCharArray() )
             {
                 if( contains( c ) )
@@ -186,7 +187,7 @@ public class EntropySniffer implements Sniffer
                 // if exceeded length then collect and continue
                 else
                 {
-                    if( count > getMaxLength() )
+                    if( count >= getMaxLength() )
                     {
                         strings.add( letters.toString() );
                     }
@@ -195,7 +196,7 @@ public class EntropySniffer implements Sniffer
                 }
             }
             // if exceeded length then collect
-            if( count > getMaxLength() )
+            if( count >= getMaxLength() )
             {
                 strings.add( letters.toString() );
             }
