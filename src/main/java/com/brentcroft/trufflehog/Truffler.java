@@ -6,7 +6,6 @@ import com.brentcroft.trufflehog.model.Issue;
 import com.brentcroft.trufflehog.receiver.Receiver;
 import com.brentcroft.trufflehog.sniffer.Sniffer;
 import com.brentcroft.trufflehog.util.JUL;
-import com.brentcroft.trufflehog.util.Local;
 import com.brentcroft.trufflehog.util.TrufflerException;
 import lombok.Getter;
 import lombok.Setter;
@@ -22,7 +21,6 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.EmptyTreeIterator;
-import org.eclipse.jgit.util.FS_Win32;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -58,9 +56,14 @@ public class Truffler
     private final List< Receiver > receivers = new ArrayList<>();
 
 
+    private long numIssues = 0;
+
+
 
     public void truffle()
     {
+        numIssues = 0;
+
         try( Repository repo = openRepo() )
         {
             try( Git git = new Git( repo ) )
@@ -184,6 +187,8 @@ public class Truffler
         }
         if( commitIssues.hasIssues() )
         {
+            numIssues += commitIssues.getDiffIssues().size();
+
             receivers.forEach( r -> r.receive( commitIssues ) );
         }
     }
