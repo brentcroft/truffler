@@ -11,12 +11,12 @@ import static org.fest.assertions.api.Assertions.assertThat;
 
 public class EntropyTest
 {
-    private static final int NUM_UUIDS = 1000000;
+    private static final int NUM_UUIDS = 10000;
 
     private static final String B64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
     private static final String HEX_CHARS = "1234567890abcdefABCDEF";
 
-    EntropySniffer b64Sniffer = new EntropySniffer()
+    private EntropySniffer b64Sniffer = new EntropySniffer()
             .withJsonCharBases( toJsonCharBase(
                     "b64",
                     B64_CHARS,
@@ -24,7 +24,7 @@ public class EntropyTest
                     20
             ) );
 
-    EntropySniffer hexSniffer = new EntropySniffer()
+    private EntropySniffer hexSniffer = new EntropySniffer()
             .withJsonCharBases( toJsonCharBase(
                     "hex",
                     HEX_CHARS,

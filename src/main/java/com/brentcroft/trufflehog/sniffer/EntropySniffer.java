@@ -130,6 +130,9 @@ public class EntropySniffer implements Sniffer
 
         double[] entropy = {0};
 
+
+
+
         IntStream
                 .range( 0, charset.length() )
                 .map( charset::charAt )

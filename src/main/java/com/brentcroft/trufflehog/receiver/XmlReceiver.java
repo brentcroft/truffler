@@ -132,14 +132,12 @@ public class XmlReceiver implements Receiver
 
                                 issue
                                         .getAttributes()
-                                        .forEach( ( k, v ) -> {
-                                            iElement
-                                                    .setAttribute(
-                                                            k,
-                                                            ( v instanceof Double )
-                                                            ? format( "%.4f", v )
-                                                            : format( "%s", v ) );
-                                        } );
+                                        .forEach( ( k, v ) -> iElement
+                                                .setAttribute(
+                                                        k,
+                                                        ( v instanceof Double )
+                                                        ? format( "%.4f", v )
+                                                        : format( "%s", v ) ) );
                             } );
 
                     if( createIssueTextNodes )
@@ -192,9 +190,7 @@ public class XmlReceiver implements Receiver
 
     private void preCloseNotification()
     {
-        closeListeners.forEach( cl -> {
-            cl.closing( XmlReceiver.this );
-        } );
+        closeListeners.forEach( cl -> cl.closing( XmlReceiver.this ) );
     }
 
     private List< CloseListener > closeListeners = new ArrayList<>();
@@ -203,6 +199,11 @@ public class XmlReceiver implements Receiver
     {
         closeListeners.add( cl );
         return this;
+    }
+
+    public String getHtmlFilename()
+    {
+        return xmlFilename.replace( ".xml", ".html" );
     }
 
 
@@ -265,7 +266,7 @@ public class XmlReceiver implements Receiver
 
                 String xml2Text = getTransformResult( templates.newTransformer() );
 
-                maybeSave( xmlFilename.replace( ".xml", ".html" ), xml2Text );
+                maybeSave( getHtmlFilename(), xml2Text );
             }
 
 

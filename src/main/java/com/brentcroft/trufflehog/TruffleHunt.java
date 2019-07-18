@@ -9,20 +9,21 @@ import static junit.framework.TestCase.assertEquals;
 public class TruffleHunt
 {
     private static final String TRUFFLE_ISSUES_MESSAGE = "Expected %d truffle issues but there were %d." +
-            "%nOpen the file [%s] in a browser and either, %n exempt known strings %n or select strings to replace %n 3. select paths to remove." +
-            "or prepare to rewrite history. %n ";
+            "%n%nReview the file [%s] in a browser, and either: " +
+            " %n 1. exempt known strings by adding them to 'truffler/entropy-known-strings.txt' " +
+            " %n 2. select strings to replace and paths (whole nodes) to remove and rewrite repository history. %n ";
 
     protected DefaultTruffler truffler = new DefaultTruffler();
 
     @Before
     public void configure()
     {
-        truffler.getEntropySniffer().setEntropyThreshold( "b64", 4.5 );
-        truffler.getEntropySniffer().setEntropyThreshold( "hex", 3.0 );
+        //truffler.getEntropySniffer().setEntropyThreshold( "b64", 4.5 );
+        //truffler.getEntropySniffer().setEntropyThreshold( "hex", 3.0 );
 
-        truffler.getRegexSniffer().withRegex( "ld", "[a]ardvark" );
+        //truffler.getRegexSniffer().withRegex( "ld", "[a]ardvark" );
 
-        truffler.getXmlReceiver().withIssueTextNodes( true );
+        //truffler.getXmlReceiver().withIssueTextNodes( true );
     }
 
 
@@ -31,8 +32,9 @@ public class TruffleHunt
     {
         truffler.truffle();
 
+        long actualIssues = truffler.getIssuesCount();
+
         long expectedIssues = 0;
-        long actualIssues = truffler.getNumIssues();
 
         assertEquals(
                 format(
