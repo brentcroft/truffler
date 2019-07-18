@@ -87,7 +87,7 @@ public class Truffler
 
                 Map< String, String > attr = new HashMap<>();
                 attr.put( "branch", branch.getName() );
-                attr.put( "repo", new File( repo.getIdentifier() ).getParentFile().getAbsolutePath() );
+                attr.put( "repo", repositoryDirectory );
 
                 receivers.forEach( r -> r.open( attr ) );
 
