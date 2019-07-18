@@ -3,6 +3,8 @@ package com.brentcroft.trufflehog;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+
 
 public class TruffleHunt
 {
@@ -23,5 +25,7 @@ public class TruffleHunt
     public void truffle()
     {
         truffler.truffle();
+        
+        assertEquals(0, truffler.getIssuesCount());
     }
 }
