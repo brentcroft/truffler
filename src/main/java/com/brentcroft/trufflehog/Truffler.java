@@ -57,10 +57,12 @@ public class Truffler
     private final List< Sniffer > sniffers = new ArrayList<>();
     private final List< Receiver > receivers = new ArrayList<>();
 
-
+    private int issuesCount = 0;
 
     public void truffle()
     {
+        issuesCount = 0;
+        
         try( Repository repo = openRepo() )
         {
             try( Git git = new Git( repo ) )
@@ -184,6 +186,8 @@ public class Truffler
         }
         if( commitIssues.hasIssues() )
         {
+            issuesCount += commitIssues.getDiffIssues().size();
+            
             receivers.forEach( r -> r.receive( commitIssues ) );
         }
     }
