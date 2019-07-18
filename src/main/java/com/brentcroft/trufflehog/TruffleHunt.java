@@ -11,7 +11,7 @@ public class TruffleHunt
     private static final String TRUFFLE_ISSUES_MESSAGE = "Expected %d truffle issues but there were %d." +
             "%n%nReview the file [%s] in a browser, and either: " +
             " %n 1. exempt known strings by adding them to 'truffler/entropy-known-strings.txt' " +
-            " %n 2. select strings to replace and paths (whole nodes) to remove and rewrite repository history. %n ";
+            " %n 2. select strings to replace and paths (whole nodes) to remove and then rewrite the repository history %n ";
 
     protected DefaultTruffler truffler = new DefaultTruffler();
 
