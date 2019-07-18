@@ -20,9 +20,9 @@ public class TruffleHunt
         truffler.getEntropySniffer().setEntropyThreshold( "b64", 4.5 );
         truffler.getEntropySniffer().setEntropyThreshold( "hex", 3.0 );
 
-        //truffler.getRegexSniffer().withRegex( "ld", "[a]ardvark" );
+        truffler.getRegexSniffer().withRegex( "ld", "[a]ardvark" );
 
-        //truffler.getXmlReceiver().withIssueTextNodes( true );
+        truffler.getXmlReceiver().withIssueTextNodes( true );
     }
 
 
