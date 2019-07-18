@@ -25,7 +25,7 @@
                     td:nth-child(2)
                     {
                         font-weight: bold;
-                        width: 5%;
+                        width: 15%;
                     }
 
                     .commit {
@@ -94,10 +94,22 @@
                     {
                         var ks = document.getElementById( "knownStrings" )
                         var ksE = document.getElementById( "existingKnownStrings" )
-                        if ( ! ks.value.includes( text ) &amp;&amp; ! ksE.value.includes( text ) )
+                        if ( ! containsLine( ks.value, text ) &amp;&amp; ! containsLine( ksE.value, text ) )
                         {
                             ks.value += "\n" + text
                         }
+                    }
+
+                    function containsLine( subject, text )
+                    {
+                        for ( var line in subject.split( "\n" ) )
+                        {
+                            if ( line.includes( text ) )
+                            {
+                                return true
+                            }
+                        }
+                        return false
                     }
 
                     function removePath( path )
@@ -203,7 +215,7 @@
                         Path:
                     </td>
                     <td>
-                        <input type="button" value="remove" onclick="removePath( '{@path}{@new-path}' )"/>
+                        <input type="button" value="remove file node" onclick="removePath( '{@path}{@new-path}' )"/>
                     </td>
                     <td>
                         <span class="path"><xsl:value-of select="@path"/><xsl:value-of select="@new-path"/></span>
@@ -224,10 +236,12 @@
                         <td>
                             <xsl:choose>
                                 <xsl:when test="( name() = 'entropy' )">
-                                    <input type="button" value="add" onclick="addKnownString( '{.}' )"/>
+                                    <input type="button" value="exempt" onclick="addKnownString( '{.}' )"/>
                                 </xsl:when>
                                 <xsl:when test="( name() = 'regex' )">
-                                    <input type="button" value="replace" onclick="replaceString( '{.}' )"/>
+                                    <input type="button" value="exempt" onclick="addKnownString( '{.}' )"/>
+                                    &#160;
+                                    <input type="button" value="overwrite" onclick="replaceString( '{.}' )"/>
                                 </xsl:when>
                             </xsl:choose>
                         </td>
