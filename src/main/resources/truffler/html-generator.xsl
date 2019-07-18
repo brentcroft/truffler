@@ -102,9 +102,10 @@
 
                     function containsLine( subject, text )
                     {
-                        for ( var line in subject.split( "\n" ) )
+                        var lines = subject.split( "\n" )
+                        for ( var line in lines )
                         {
-                            if ( line.includes( text ) )
+                            if ( lines[ line ] == text )
                             {
                                 return true
                             }
@@ -123,7 +124,7 @@
                     function replaceString( text )
                     {
                         var ks = document.getElementById( "replaceStrings" )
-                        if ( ! ks.value.includes( text ) )
+                        if ( ! containsLine( ks.value, text ) )
                         {
                             ks.value += "\n" + text
                         }
