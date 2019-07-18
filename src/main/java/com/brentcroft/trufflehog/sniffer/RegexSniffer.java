@@ -15,6 +15,8 @@ public class RegexSniffer implements Sniffer
 {
     private Map< String, Pattern > regex = new HashMap<>();
 
+    private Set< String > knownStrings;
+
     public RegexSniffer withRegexJsonFile( String path )
     {
         try
@@ -62,6 +64,13 @@ public class RegexSniffer implements Sniffer
 
 
 
+    public RegexSniffer withKnownStrings( Set< String > knownStrings )
+    {
+        this.knownStrings = knownStrings;
+        return this;
+    }
+
+
     @Override
     public Set< Issue > sniff( String diff )
     {
@@ -74,6 +83,7 @@ public class RegexSniffer implements Sniffer
 
         regex.forEach( ( k, pattern ) -> {
 
+            // riff through any matches
             Matcher m = pattern.matcher( diff );
 
             int[] occurrences = {0};
@@ -82,6 +92,12 @@ public class RegexSniffer implements Sniffer
             while( m.find() )
             {
                 text[ 0 ] = diff.substring( m.start(), m.end() );
+
+                if ( Objects.nonNull( knownStrings ) && knownStrings.contains( text[0 ] ))
+                {
+                    continue;
+                }
+
                 occurrences[ 0 ]++;
             }
 

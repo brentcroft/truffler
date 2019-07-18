@@ -38,8 +38,7 @@ public class DefaultTruffler extends Truffler
         try
         {
             knownStrings = Local.getFileLines( ENTROPY_KNOWN_STRINGS );
-        }
-        catch (Exception e)
+        } catch( Exception e )
         {
             log.log( Level.WARNING, "", e );
         }
@@ -54,7 +53,8 @@ public class DefaultTruffler extends Truffler
         getSniffers()
                 .add(
                         regexSniffer
-                                .withRegexJsonText( Local.getFileText( REGEX_RULES_JSON ) ) );
+                                .withRegexJsonText( Local.getFileText( REGEX_RULES_JSON ) )
+                                .withKnownStrings( entropySniffer.getKnownStrings() ) );
 
         getReceivers()
                 .add(
