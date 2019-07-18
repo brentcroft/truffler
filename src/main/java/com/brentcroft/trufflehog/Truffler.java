@@ -72,7 +72,8 @@ public class Truffler
 
                 if( Objects.isNull( headId ) )
                 {
-                    throw new IllegalArgumentException( "No object id for HEAD." );
+                    log.info( "No object id for HEAD, no history to examine." );
+                    return;
                 }
 
                 String headName = headId.name();
