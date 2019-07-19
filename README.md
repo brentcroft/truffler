@@ -1,5 +1,5 @@
 # truffler
-Derivative of TruffleHog
+Derivative of [TruffleHog](https://github.com/dxa4481/truffleHog)
 
 ### Use Maven to build and install this kit into a maven repository.
 
