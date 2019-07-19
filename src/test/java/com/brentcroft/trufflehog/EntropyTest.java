@@ -35,7 +35,7 @@ public class EntropyTest
 
     private String toJsonCharBase( String name, String chars, double threshold, int maxLenth )
     {
-        return format( "[{\"name\": \"%s\", \"B64_CHARS\": \"%s\", \"threshold\": %s, \"maxLength\": %s }]",
+        return format( "[{\"name\": \"%s\", \"chars\": \"%s\", \"threshold\": %s, \"maxLength\": %s }]",
                 name,
                 chars,
                 threshold,
