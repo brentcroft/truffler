@@ -6,7 +6,6 @@ import com.brentcroft.trufflehog.model.Issue;
 import com.brentcroft.trufflehog.receiver.Receiver;
 import com.brentcroft.trufflehog.sniffer.Sniffer;
 import com.brentcroft.trufflehog.util.JUL;
-import com.brentcroft.trufflehog.util.Local;
 import com.brentcroft.trufflehog.util.TrufflerException;
 import lombok.Getter;
 import lombok.Setter;
@@ -22,10 +21,8 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.EmptyTreeIterator;
-import org.eclipse.jgit.util.FS_Win32;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Paths;
@@ -59,6 +56,7 @@ public class Truffler
 
     private int issuesCount = 0;
 
+
     public void truffle()
     {
         issuesCount = 0;
@@ -77,7 +75,6 @@ public class Truffler
                 }
 
                 String headName = headId.name();
-
 
                 Ref branch = git
                         .branchList()
@@ -98,7 +95,7 @@ public class Truffler
                 {
                     Set< String > alreadySeen = new HashSet<>();
 
-                    processCommits(
+                    walkCommits(
                             repo,
                             walk,
                             walk.parseCommit( branch.getObjectId() ),
@@ -111,11 +108,28 @@ public class Truffler
             }
         } catch( Exception e )
         {
-            throw new RuntimeException( e );
+            throw e instanceof RuntimeException ? ( RuntimeException ) e : new RuntimeException( e );
         }
     }
 
-    private void processCommits( Repository repo, RevWalk walk, RevCommit commit, int depth, Set< String > alreadySeen ) throws IOException
+
+    public Repository openRepo()
+    {
+        try
+        {
+            return new FileRepositoryBuilder()
+                    .setGitDir( Paths.get( repositoryDirectory, ".git" ).toFile() )
+                    .readEnvironment()
+                    .findGitDir()
+                    .build();
+        } catch( IOException e )
+        {
+            throw new TrufflerException( e );
+        }
+    }
+
+
+    private void walkCommits( Repository repo, RevWalk walk, RevCommit commit, int depth, Set< String > alreadySeen ) throws IOException
     {
         String commitId = commit.getId().name();
 
@@ -138,15 +152,16 @@ public class Truffler
             {
                 walk.parseHeaders( parentCommit );
 
-                diffIssues( repo, commit, parentCommit );
+                diffCommit( repo, commit, parentCommit );
 
                 if( ! commitId.equals( earliestCommitId ) )
                 {
-                    processCommits( repo, walk, parentCommit, depth - 1, alreadySeen );
+                    walkCommits( repo, walk, parentCommit, depth - 1, alreadySeen );
                 }
             }
         }
     }
+
 
     private void diffFirstCommit( Repository repo, RevCommit commit ) throws IOException
     {
@@ -158,21 +173,23 @@ public class Truffler
         {
             df.setRepository( repo );
 
-            processDiffEntries( repo, commit, df.scan( oldTreeIter, newTreeIter ) );
+            sniffEntriesAndNotifyIssues( repo, commit, df.scan( oldTreeIter, newTreeIter ) );
         }
     }
 
-    private void diffIssues( Repository repo, RevCommit commit, RevCommit parentCommit ) throws IOException
+
+    private void diffCommit( Repository repo, RevCommit commit, RevCommit parentCommit ) throws IOException
     {
         try( DiffFormatter df = new DiffFormatter( new ByteArrayOutputStream() ) )
         {
             df.setRepository( repo );
 
-            processDiffEntries( repo, commit, df.scan( commit, parentCommit ) );
+            sniffEntriesAndNotifyIssues( repo, commit, df.scan( commit, parentCommit ) );
         }
     }
 
-    private void processDiffEntries( Repository repo, RevCommit commit, List< DiffEntry > entries )
+
+    private void sniffEntriesAndNotifyIssues( Repository repo, RevCommit commit, List< DiffEntry > entries )
     {
         CommitIssues commitIssues = new CommitIssues( commit );
 
@@ -185,12 +202,33 @@ public class Truffler
                 commitIssues.getDiffIssues().add( diffIssues );
             }
         }
+
         if( commitIssues.hasIssues() )
         {
             issuesCount += commitIssues.getDiffIssues().size();
 
             receivers.forEach( r -> r.receive( commitIssues ) );
         }
+    }
+
+
+    private DiffIssues notifySniffers( Repository repo, DiffEntry diffEntry )
+    {
+        String diffEntryText = getDiffEntryText( repo, diffEntry );
+
+        Set< Issue > issues = sniffers
+                .stream()
+                .map( sniffer -> sniffer.sniff( diffEntryText ) )
+                .flatMap( Set::stream )
+                .filter( Objects::nonNull )
+                .collect( Collectors.toSet() );
+
+        if( Objects.isNull( issues ) || issues.isEmpty() )
+        {
+            return null;
+        }
+
+        return new DiffIssues( diffEntry, diffEntryText, issues );
     }
 
 
@@ -223,41 +261,6 @@ public class Truffler
                     .filter( s -> s.length() > 0 )
                     .collect( Collectors.joining( "\n" ) );
 
-        } catch( IOException e )
-        {
-            throw new TrufflerException( e );
-        }
-    }
-
-
-    private DiffIssues notifySniffers( Repository repo, DiffEntry diffEntry )
-    {
-        String diffEntryText = getDiffEntryText( repo, diffEntry );
-
-        Set< Issue > issues = sniffers
-                .stream()
-                .map( sniffer -> sniffer.sniff( diffEntryText ) )
-                .flatMap( Set::stream )
-                .filter( Objects::nonNull )
-                .collect( Collectors.toSet() );
-
-        if( Objects.isNull( issues ) || issues.isEmpty() )
-        {
-            return null;
-        }
-
-        return new DiffIssues( diffEntry, diffEntryText, issues );
-    }
-
-    public Repository openRepo()
-    {
-        try
-        {
-            return new FileRepositoryBuilder()
-                    .setGitDir( Paths.get( repositoryDirectory, ".git" ).toFile() )
-                    .readEnvironment()
-                    .findGitDir()
-                    .build();
         } catch( IOException e )
         {
             throw new TrufflerException( e );
