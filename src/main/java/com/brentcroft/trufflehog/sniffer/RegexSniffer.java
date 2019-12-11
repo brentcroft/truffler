@@ -29,7 +29,7 @@ public class RegexSniffer implements Sniffer
         }
     }
 
-    private static final TypeReference STRING_MAP = new TypeReference< Map< String, String > >()
+    private static final TypeReference< Map< String, String > > STRING_MAP = new TypeReference< Map< String, String > >()
     {
     };
 

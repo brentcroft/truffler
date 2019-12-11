@@ -25,7 +25,7 @@ public class EntropySniffer implements Sniffer
     private final List< CharBase > charBases = new ArrayList<>();
 
 
-    private static final TypeReference OBJECT_MAP_LIST = new TypeReference< List< Map< String, Object > > >()
+    private static final TypeReference< List< Map< String, Object > > > OBJECT_MAP_LIST = new TypeReference< List< Map< String, Object > > >()
     {
     };
 
